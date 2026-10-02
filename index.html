@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org; connect-src 'self' https://servicodados.ibge.gov.br https://query.wikidata.org https://pt.wikipedia.org; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Briefing Municipal — EDP Sistemas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#10171f; --surface:#17212b; --raise:#1d2935; --line:#2b3947; --line-soft:#223040;
+  --text:#e8e3d8; --muted:#93a1ae; --faint:#66768a;
+  --brass:#c8a35a; --brass-soft:rgba(200,163,90,.14);
+  --ok:#6fb8a6; --ok-soft:rgba(111,184,166,.13);
+  --warn:#e2826a; --warn-soft:rgba(226,130,106,.13);
+  --info:#7c93ad; --info-soft:rgba(124,147,173,.14);
+  --serif:"Literata", Georgia, "Times New Roman", serif;
+  --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r-sm:4px; --r-md:8px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; min-height:100%; background:var(--ink); color:var(--text); font:15px/1.55 var(--sans); -webkit-font-smoothing:antialiased}
+a{color:var(--brass); text-underline-offset:3px}
+a:hover{color:#dfbd77}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:var(--r-sm)}
+.sr{position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* ---------- shell ---------- */
+.app{display:grid; grid-template-columns:330px minmax(0,1fr); min-height:100vh}
+.rail{border-right:1px solid var(--line); background:var(--surface); padding:22px 20px; position:sticky; top:0; height:100vh; overflow:auto; display:flex; flex-direction:column; gap:20px}
+.brand{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+.brand h1{font:600 19px/1.2 var(--serif); margin:0; letter-spacing:.005em}
+.brand small{color:var(--faint); font-size:12px}
+.step-label{font-size:13px; color:var(--muted); margin:0 0 8px; font-weight:500}
+
+/* mapa de UFs em grade geográfica: o elemento memorável da interface */
+.ufmap{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; max-width:290px}
+.uf{aspect-ratio:1; border:1px solid var(--line); background:var(--raise); border-radius:var(--r-sm); font:600 12px/1 var(--sans); letter-spacing:.02em; cursor:pointer; display:grid; place-items:center; color:var(--muted); transition:background .15s, color .15s, border-color .15s}
+.uf:hover{border-color:var(--brass); color:var(--text)}
+.uf[aria-pressed="true"]{background:var(--brass); border-color:var(--brass); color:#1a1408}
+.ufname{min-height:20px; margin-top:8px; font:600 15px/1.3 var(--serif)}
+
+.search{position:relative}
+.search input{width:100%; background:var(--ink); border:1px solid var(--line); color:var(--text); border-radius:var(--r-md); padding:10px 12px; font:inherit}
+.search input:disabled{opacity:.5}
+.search input::placeholder{color:var(--faint)}
+.munlist{list-style:none; margin:8px 0 0; padding:0; border:1px solid var(--line-soft); border-radius:var(--r-md); max-height:42vh; overflow:auto; background:var(--ink)}
+.munlist:empty{display:none}
+.munlist li{padding:7px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; border-bottom:1px solid var(--line-soft)}
+.munlist li:last-child{border-bottom:0}
+.munlist li[aria-selected="true"], .munlist li:hover{background:var(--raise)}
+.munlist li .cod{color:var(--faint); font-size:12px; font-variant-numeric:tabular-nums}
+.count{font-size:12px; color:var(--faint); margin-top:6px}
+.rail-foot{margin-top:auto; font-size:12px; color:var(--faint); line-height:1.5}
+.rail-foot label{color:var(--brass); cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+
+/* ---------- briefing ---------- */
+main{padding:36px clamp(20px,4vw,56px) 80px; min-width:0}
+.doc{max-width:880px}
+.empty{max-width:560px; margin-top:12vh}
+.empty h2{font:600 30px/1.2 var(--serif); margin:0 0 12px}
+.empty p{color:var(--muted); margin:0 0 10px}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px}
+.btn{background:var(--raise); border:1px solid var(--line); border-radius:var(--r-md); padding:7px 13px; cursor:pointer; font-size:13px; font-weight:500}
+.btn:hover{border-color:var(--brass)}
+.btn.small{padding:4px 10px; font-size:12px}
+
+.mun-head{border-bottom:1px solid var(--line); padding-bottom:22px; margin-bottom:28px}
+.mun-head .where{color:var(--muted); font-size:14px; margin:0 0 6px}
+.mun-head h2{font:700 clamp(32px,5vw,48px)/1.05 var(--serif); margin:0 0 10px; letter-spacing:-.01em}
+.mun-head .facts{color:var(--muted); margin:0}
+.links{display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; font-size:14px}
+
+section.block{margin:0 0 34px}
+section.block > h3{font:600 20px/1.3 var(--serif); margin:0 0 14px}
+.note{color:var(--muted); font-size:13px}
+
+.grid-ind{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line)}
+.ind{padding:12px 14px; border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
+.ind .lbl{font-size:13px; color:var(--muted)}
+.ind .val{font:600 21px/1.25 var(--serif); font-variant-numeric:tabular-nums; margin:3px 0 1px}
+.ind .unit{font:400 13px var(--sans); color:var(--muted)}
+.ind .yr{font-size:12px; color:var(--faint)}
+
+.gov{display:grid; grid-template-columns:132px minmax(0,1fr); gap:22px; align-items:start}
+.portrait{width:132px; aspect-ratio:4/5; border-radius:var(--r-md); border:1px solid var(--line); background:var(--raise); object-fit:cover; display:grid; place-items:center; font:600 40px var(--serif); color:var(--brass); overflow:hidden}
+.gov .role{color:var(--muted); font-size:14px; margin:0}
+.gov h4{font:700 30px/1.15 var(--serif); margin:2px 0 4px}
+.gov .full{color:var(--muted); margin:0 0 12px}
+.kv{display:grid; grid-template-columns:max-content minmax(0,1fr); gap:5px 18px; margin:0; font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0; font-variant-numeric:tabular-nums}
+.kv dd{overflow-wrap:anywhere}
+.alerta{border-left:3px solid var(--warn); background:var(--warn-soft); padding:10px 14px; border-radius:0 var(--r-md) var(--r-md) 0; margin:0 0 16px; font-size:14px}
+.party{display:inline-block; border:1px solid var(--brass); color:var(--brass); border-radius:var(--r-sm); padding:0 6px; font-weight:600; font-size:13px; margin-right:6px}
+
+.status{border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden}
+.status-top{display:flex; gap:12px; align-items:flex-start; padding:14px 16px}
+.status-top .dot{width:10px; height:10px; border-radius:50%; margin-top:6px; flex:none}
+.status-top strong{display:block; font-size:15px}
+.status-top p{margin:2px 0 0; color:var(--muted); font-size:14px}
+.status.ok{border-color:rgba(111,184,166,.45)} .status.ok .status-top{background:var(--ok-soft)} .status.ok .dot{background:var(--ok)}
+.status.warn{border-color:rgba(226,130,106,.5)} .status.warn .status-top{background:var(--warn-soft)} .status.warn .dot{background:var(--warn)}
+.status.info .status-top{background:var(--info-soft)} .status.info .dot{background:var(--info)}
+table.src{width:100%; border-collapse:collapse; font-size:14px}
+table.src th, table.src td{text-align:left; padding:9px 16px; border-top:1px solid var(--line-soft); vertical-align:top}
+table.src th{color:var(--muted); font-weight:500; font-size:13px}
+.tag{display:inline-block; font-size:12px; padding:1px 7px; border-radius:var(--r-sm); white-space:nowrap}
+.tag.ok{background:var(--ok-soft); color:var(--ok)} .tag.warn{background:var(--warn-soft); color:var(--warn)} .tag.info{background:var(--info-soft); color:var(--info)}
+.tablewrap{overflow-x:auto}
+
+.timeline{list-style:none; margin:0; padding:0; border-left:2px solid var(--line)}
+.timeline li{position:relative; padding:0 0 12px 18px}
+.timeline li::before{content:""; position:absolute; left:-6px; top:7px; width:10px; height:10px; border-radius:50%; background:var(--surface); border:2px solid var(--faint)}
+.timeline li.won::before{border-color:var(--brass); background:var(--brass)}
+.timeline .yr{font-weight:600; font-variant-numeric:tabular-nums; margin-right:8px}
+.timeline .meta{color:var(--muted); font-size:14px}
+
+.prose{font:400 16px/1.7 var(--serif); max-width:72ch; margin:0}
+.attrib{font-size:12px; color:var(--faint); margin-top:6px}
+
+.skel{height:14px; border-radius:var(--r-sm); background:linear-gradient(90deg,var(--raise),var(--line-soft),var(--raise)); background-size:200% 100%; animation:sh 1.3s linear infinite; margin:6px 0}
+@keyframes sh{to{background-position:-200% 0}}
+.err{border:1px dashed var(--line); border-radius:var(--r-md); padding:12px 14px; color:var(--muted); font-size:14px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+
+.toast{position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%); background:var(--raise); border:1px solid var(--brass); padding:9px 16px; border-radius:var(--r-md); font-size:14px; opacity:0; pointer-events:none; transition:opacity .2s}
+.toast.show{opacity:1}
+
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static; height:auto; border-right:0; border-bottom:1px solid var(--line)}
+  .ufmap{max-width:340px}
+  .munlist{max-height:46vh}
+  .gov{grid-template-columns:96px minmax(0,1fr)}
+  .portrait{width:96px; font-size:30px}
+  .gov h4{font-size:24px}
+}
+@media (max-width:560px){
+  .gov{grid-template-columns:1fr; gap:14px}
+  .portrait{width:84px; font-size:28px}
+  .kv{grid-template-columns:minmax(92px,max-content) minmax(0,1fr); gap:6px 12px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+@media print{
+  :root{--ink:#fff; --surface:#fff; --raise:#f4f4f4; --line:#ccc; --line-soft:#ddd; --text:#111; --muted:#444; --faint:#666; --brass:#7a5a12}
+  .rail,.toolbar,.err .btn,.toast{display:none!important}
+  .app{display:block} main{padding:0}
+  section.block{break-inside:avoid}
+  a{color:#111}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail" aria-label="Seleção de município">
+    <div class="brand"><h1>Briefing Municipal</h1><small>EDP Sistemas</small></div>
+
+    <div>
+      <p class="step-label" id="lbl-uf">Estado</p>
+      <div class="ufmap" id="ufmap" role="group" aria-labelledby="lbl-uf"></div>
+      <div class="ufname" id="ufname" aria-live="polite"></div>
+    </div>
+
+    <div class="search">
+      <label class="step-label" for="q" style="display:block">Município</label>
+      <input id="q" type="search" placeholder="Escolha um estado primeiro" disabled autocomplete="off"
+             role="combobox" aria-expanded="false" aria-controls="munlist" aria-autocomplete="list">
+      <ul class="munlist" id="munlist" role="listbox" aria-label="Municípios"></ul>
+      <div class="count" id="count" aria-live="polite"></div>
+    </div>
+
+    <div class="rail-foot">
+      <div id="tse-status">Base do TSE: não carregada.</div>
+      <div style="margin-top:6px">Sem servidor? <label for="tse-file">Importar JSON da UF</label>
+        <input id="tse-file" class="sr" type="file" accept="application/json,.json" multiple></div>
+    </div>
+  </aside>
+
+  <main id="main" tabindex="-1">
+    <div class="doc" id="doc">
+      <div class="empty">
+        <h2>Escolha um estado e um município</h2>
+        <p>O briefing junta o perfil do município (IBGE) e do prefeito (TSE, Wikidata e Wikipedia), mostra de onde veio cada dado e avisa quando as fontes discordam sobre quem está no cargo.</p>
+        <p>Atalho: o endereço da página guarda a seleção, então dá para compartilhar o link de um briefing.</p>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+(function () {
+
+/* ================================================================ configuração */
+const CONFIG = {
+  // Arquivos gerados por etl/build_prefeitos.py. Ajuste se publicar em outro caminho.
+  tseUrl: (uf) => `./data/prefeitos/${uf.toLowerCase()}.json`,
+  ibge: "https://servicodados.ibge.gov.br/api/v1",
+  wikidata: "https://query.wikidata.org/sparql",
+  wikipedia: "https://pt.wikipedia.org/api/rest_v1/page/summary/",
+  timeoutMs: 12000,
+  cacheTtlMs: 30 * 24 * 3600 * 1000,
+};
+
+const UFS = [
+  ["RR",0,2,"Roraima"],["AP",0,4,"Amapá"],
+  ["AM",1,1,"Amazonas"],["PA",1,3,"Pará"],["MA",1,4,"Maranhão"],["CE",1,5,"Ceará"],["RN",1,6,"Rio Grande do Norte"],
+  ["AC",2,0,"Acre"],["RO",2,1,"Rondônia"],["MT",2,2,"Mato Grosso"],["TO",2,3,"Tocantins"],["PI",2,4,"Piauí"],["PE",2,5,"Pernambuco"],["PB",2,6,"Paraíba"],
+  ["MS",3,2,"Mato Grosso do Sul"],["GO",3,3,"Goiás"],["DF",3,4,"Distrito Federal"],["BA",3,5,"Bahia"],["AL",3,6,"Alagoas"],
+  ["SP",4,3,"São Paulo"],["MG",4,4,"Minas Gerais"],["ES",4,5,"Espírito Santo"],["SE",4,6,"Sergipe"],
+  ["PR",5,3,"Paraná"],["RJ",5,4,"Rio de Janeiro"],
+  ["SC",6,3,"Santa Catarina"],
+  ["RS",7,3,"Rio Grande do Sul"],
+];
+const UF_NOME = Object.fromEntries(UFS.map(u => [u[0], u[3]]));
+
+// Indicadores do painel do IBGE Cidades (API de Pesquisas). Unidades conferidas no próprio painel.
+const INDICADORES = [
+  {k:"pop",  p:33, id:29171, lbl:"População estimada", unit:"pessoas", dec:0},
+  {k:"area", p:33, id:29167, lbl:"Área territorial", unit:"km²", dec:1},
+  {k:"dens", p:33, id:29168, lbl:"Densidade demográfica", unit:"hab/km²", dec:1},
+  {k:"pib",  p:38, id:47001, lbl:"PIB per capita", unit:"R$", pre:true, dec:0},
+  {k:"idh",  p:37, id:30255, lbl:"IDHM", unit:"", dec:3},
+  {k:"sal",  p:33, id:29765, lbl:"Salário médio formal", unit:"salários mínimos", dec:1},
+  {k:"esc",  p:40, id:60045, lbl:"Escolarização 6 a 14 anos", unit:"%", dec:1},
+  {k:"mort", p:39, id:30279, lbl:"Mortalidade infantil", unit:"por mil nascidos vivos", dec:1},
+];
+
+/* ================================================================ utilidades */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = (u) => { try { const x = new URL(String(u)); return /^https?:$/.test(x.protocol) ? x.href : ""; } catch { return ""; } };
+const link = (u, txt) => { const s = safeUrl(u); return s ? `<a href="${esc(s)}" target="_blank" rel="noopener noreferrer">${esc(txt)}</a>` : ""; };
+const semAcento = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const normNome = (s) => semAcento(s).toUpperCase().replace(/[^A-Z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+const slug = (s) => semAcento(s).toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const fmtNum = (n, dec = 0) => Number(n).toLocaleString("pt-BR", {minimumFractionDigits: dec, maximumFractionDigits: dec});
+const fmtBRL = (n) => Number(n).toLocaleString("pt-BR", {style: "currency", currency: "BRL", maximumFractionDigits: 0});
+const fmtData = (iso) => { if (!iso) return ""; const [y, m, d] = String(iso).slice(0, 10).split("-"); return d && m && y ? `${d}/${m}/${y}` : ""; };
+const titulo = (s) => String(s || "").toLowerCase().replace(/(^|[\s\-'(])([a-zà-ú])/g, (_, a, b) => a + b.toUpperCase())
+  .replace(/\b(Da|De|Do|Das|Dos|E)\b/g, w => w.toLowerCase());
+function idade(iso) {
+  if (!iso) return null;
+  const n = new Date(iso + "T00:00:00"), h = new Date();
+  if (isNaN(n)) return null;
+  let a = h.getFullYear() - n.getFullYear();
+  if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
+  return a;
+}
+const RESULTADOS = {"ELEITO": "Eleito", "ELEITO POR QP": "Eleito por quociente partidário", "ELEITO POR MÉDIA": "Eleito por média",
+  "SUPLENTE": "Suplente", "NÃO ELEITO": "Não eleito", "2º TURNO": "Foi ao 2º turno"};
+const fmtResultado = (r) => RESULTADOS[String(r || "").toUpperCase()] || titulo(r || "");
+const iniciais = (s) => normNome(s).split(" ").filter(w => w.length > 2).slice(0, 2).map(w => w[0]).join("") || "?";
+
+const PARTICULAS = new Set(["DA","DE","DO","DAS","DOS","E","DI","DU"]);
+const tokens = (s) => normNome(s).split(" ").filter(t => t && !PARTICULAS.has(t));
+/** Compara nomes vindos de fontes diferentes (nome completo, nome de urna, rótulo da Wikidata). */
+function nomesCompativeis(a, b) {
+  const A = tokens(a), B = tokens(b);
+  if (!A.length || !B.length) return false;
+  const SB = new Set(B), SA = new Set(A);
+  const comum = A.filter(t => SB.has(t)).length;
+  const menor = Math.min(A.length, B.length);
+  if (menor === 1) return comum === 1 && (A.length === 1 ? SB.has(A[0]) : SA.has(B[0]));
+  return comum >= 2 || comum === menor;
+}
+
+const cache = new Map();
+const emVoo = new Map();
+function lsGet(k) {
+  try { const v = JSON.parse(localStorage.getItem("bm:" + k)); if (v && Date.now() - v.t < CONFIG.cacheTtlMs) return v.d; } catch {}
+  return null;
+}
+function lsSet(k, d) { try { localStorage.setItem("bm:" + k, JSON.stringify({t: Date.now(), d})); } catch {} }
+
+function fetchJSON(url, opts) {
+  if (cache.has(url)) return Promise.resolve(cache.get(url));
+  if (emVoo.has(url)) return emVoo.get(url);  // mesma URL pedida por duas seções: uma requisição só
+  const p = baixarJSON(url, opts).finally(() => emVoo.delete(url));
+  emVoo.set(url, p);
+  return p;
+}
+
+async function baixarJSON(url, {retries = 1, timeout = CONFIG.timeoutMs} = {}) {
+  let ultimo;
+  for (let i = 0; i <= retries; i++) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), timeout);
+    try {
+      const r = await fetch(url, {signal: ctl.signal});
+      if (!r.ok) throw new Error(r.status === 404 ? "arquivo não encontrado (HTTP 404)" : `HTTP ${r.status}`);
+      const ct = (r.headers && r.headers.get && r.headers.get("content-type")) || "";
+      if (ct && !/json/i.test(ct)) throw new Error("o servidor devolveu uma página em vez de JSON; o arquivo provavelmente não existe nesse caminho");
+      let d;
+      try { d = await r.json(); } catch { throw new Error("resposta inválida (não é JSON)"); }
+      cache.set(url, d);
+      return d;
+    } catch (e) {
+      ultimo = e.name === "AbortError" ? new Error("tempo esgotado") : e;
+      if (/HTTP 4|página em vez de JSON|não é JSON/.test(String(ultimo.message))) break;  // não melhora com nova tentativa
+      if (i < retries) await new Promise(r => setTimeout(r, 600 * (i + 1)));
+    } finally { clearTimeout(t); }
+  }
+  throw ultimo;
+}
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+/* ================================================================ fontes */
+const Fontes = {
+  async municipios(uf) {
+    const k = "mun:" + uf, c = lsGet(k); if (c) return c;
+    const d = await fetchJSON(`${CONFIG.ibge}/localidades/estados/${uf}/municipios`);
+    const lista = d.map(m => ({id: String(m.id), nome: m.nome})).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    lsSet(k, lista);
+    return lista;
+  },
+
+  async localidade(cod) {
+    const m = await fetchJSON(`${CONFIG.ibge}/localidades/municipios/${cod}`);
+    // microrregiao/mesorregiao podem vir nulas em municípios recém-criados
+    const ri = m["regiao-imediata"] || null, rint = ri?.["regiao-intermediaria"] || null;
+    return {
+      id: String(m.id), nome: m.nome,
+      uf: rint?.UF?.sigla || m.microrregiao?.mesorregiao?.UF?.sigla || "",
+      regiao: rint?.UF?.regiao?.nome || m.microrregiao?.mesorregiao?.UF?.regiao?.nome || "",
+      imediata: ri?.nome || "", intermediaria: rint?.nome || "",
+    };
+  },
+
+  async indicadores(cod) {
+    const res = await Promise.allSettled(INDICADORES.map(async (ind) => {
+      const d = await fetchJSON(`${CONFIG.ibge}/pesquisas/${ind.p}/indicadores/${ind.id}/resultados/${cod}`, {timeout: 9000});
+      const serie = d?.[0]?.res?.[0]?.res || {};
+      const ano = Object.keys(serie).sort().reverse().find(a => serie[a] != null && !["-", "...", "X", ""].includes(String(serie[a]).trim()));
+      if (!ano) return null;
+      const v = Number(String(serie[ano]).replace(",", "."));
+      return isFinite(v) ? {...ind, valor: v, ano} : null;
+    }));
+    const ok = res.filter(r => r.status === "fulfilled" && r.value).map(r => r.value);
+    if (!ok.length) throw new Error("nenhum indicador respondeu");
+    return {itens: ok, faltaram: INDICADORES.length - ok.length};
+  },
+
+  /** O campo "Prefeito" do IBGE Cidades: o ID é descoberto pelo nome, nunca fixado. */
+  async metaPanorama() {
+    const k = "meta33", c = lsGet(k); if (c) return c;
+    const d = await fetchJSON(`${CONFIG.ibge}/pesquisas/33/indicadores`);
+    const plano = [];
+    (function walk(arr) { for (const n of arr || []) { plano.push({id: n.id, nome: n.indicador || ""}); walk(n.children); } })(d);
+    const achar = (re) => plano.find(x => re.test(semAcento(x.nome).toLowerCase()))?.id || null;
+    const meta = {prefeito: achar(/^prefeit/), gentilico: achar(/^gentilico/)};
+    lsSet(k, meta);
+    return meta;
+  },
+
+  async ibgePrefeito(cod) {
+    const meta = await this.metaPanorama();
+    const ler = async (id) => {
+      if (!id) return null;
+      const d = await fetchJSON(`${CONFIG.ibge}/pesquisas/33/indicadores/${id}/resultados/${cod}`, {timeout: 9000});
+      const s = d?.[0]?.res?.[0]?.res || {};
+      const ano = Object.keys(s).sort().reverse().find(a => s[a] && !["-", "..."].includes(String(s[a]).trim()));
+      return ano ? {valor: String(s[ano]).trim(), ano} : null;
+    };
+    const [pref, gent] = await Promise.allSettled([ler(meta.prefeito), ler(meta.gentilico)]);
+    if (!meta.prefeito) throw new Error("campo de prefeito não localizado na API do IBGE");
+    return {
+      prefeito: pref.status === "fulfilled" ? pref.value : null,
+      gentilico: gent.status === "fulfilled" ? gent.value : null,
+    };
+  },
+
+  async wikidata(cod) {
+    const q = `SELECT ?mun ?munLabel ?site ?artigo ?st ?mayor ?mayorLabel ?inicio ?fim ?partidoLabel ?img ?nasc ?artigoPref WHERE {
+      ?mun wdt:P1585 "${cod}".
+      OPTIONAL { ?mun wdt:P856 ?site. }
+      OPTIONAL { ?artigo schema:about ?mun; schema:isPartOf <https://pt.wikipedia.org/>. }
+      OPTIONAL { ?mun p:P6 ?st. ?st ps:P6 ?mayor; wikibase:rank ?rank. FILTER(?rank != wikibase:DeprecatedRank)
+        OPTIONAL { ?st pq:P580 ?inicio. } OPTIONAL { ?st pq:P582 ?fim. }
+        OPTIONAL { ?mayor wdt:P18 ?img. } OPTIONAL { ?mayor wdt:P569 ?nasc. } OPTIONAL { ?mayor wdt:P102 ?partido. }
+        OPTIONAL { ?artigoPref schema:about ?mayor; schema:isPartOf <https://pt.wikipedia.org/>. } }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt-br,pt,en". }
+    } LIMIT 200`;
+    if (!/^\d{7}$/.test(cod)) throw new Error("código IBGE inválido");
+    const d = await fetchJSON(`${CONFIG.wikidata}?format=json&query=${encodeURIComponent(q)}`, {timeout: 15000});
+    return parseWikidata(d?.results?.bindings || []);
+  },
+
+  async wikipedia(artigoUrl) {
+    const u = safeUrl(artigoUrl);
+    if (!u || !u.includes("/wiki/")) return null;
+    const pagina = decodeURIComponent(u.split("/wiki/")[1]);
+    const d = await fetchJSON(CONFIG.wikipedia + encodeURIComponent(pagina), {timeout: 9000});
+    if (d?.type === "disambiguation") return null;
+    return {extrato: d?.extract || "", url: d?.content_urls?.desktop?.page || u, titulo: d?.title || pagina};
+  },
+
+  tseUF: {},  // dados importados manualmente ficam aqui
+  async tse(uf) {
+    if (this.tseUF[uf]) return this.tseUF[uf];
+    const d = await fetchJSON(CONFIG.tseUrl(uf), {retries: 0, timeout: 15000});
+    if (!d || !d.municipios) throw new Error("arquivo sem o campo 'municipios'");
+    this.tseUF[uf] = d;
+    return d;
+  },
+};
+
+function parseWikidata(rows) {
+  if (!rows.length) return null;
+  const v = (r, k) => r[k]?.value;
+  const r0 = rows[0];
+  const out = {
+    qid: v(r0, "mun")?.split("/").pop(), rotulo: v(r0, "munLabel"),
+    site: null, artigo: v(r0, "artigo") || null, prefeito: null, historico: [],
+  };
+  const sites = [...new Set(rows.map(r => v(r, "site")).filter(Boolean))];
+  out.site = sites.find(s => /\.gov\.br/i.test(s)) || sites[0] || null;
+  const porSt = new Map();
+  for (const r of rows) {
+    const st = v(r, "st"); if (!st) continue;
+    const e = porSt.get(st) || {nome: v(r, "mayorLabel"), qid: v(r, "mayor")?.split("/").pop(), inicio: v(r, "inicio") || null,
+      fim: v(r, "fim") || null, partidos: new Set(), img: v(r, "img") || null, nasc: v(r, "nasc") || null, artigo: v(r, "artigoPref") || null};
+    if (v(r, "partidoLabel")) e.partidos.add(v(r, "partidoLabel"));
+    porSt.set(st, e);
+  }
+  const todos = [...porSt.values()].map(e => ({...e, partidos: [...e.partidos]}))
+    .filter(e => e.nome && !/^Q\d+$/.test(e.nome))
+    .sort((a, b) => String(b.inicio || "").localeCompare(String(a.inicio || "")));
+  out.historico = todos;
+  // vigente = sem data de fim e com o início mais recente
+  out.prefeito = todos.find(e => !e.fim || new Date(e.fim) > new Date()) || null;
+  if (out.prefeito?.img) {
+    const img = out.prefeito.img.replace(/^http:/, "https:");
+    out.prefeito.img = img + (img.includes("?") ? "&" : "?") + "width=320";
+  }
+  return out;
+}
+
+/* ================================================================ estado */
+const S = {uf: null, municipios: [], filtro: [], ativo: -1, cod: null, token: 0, secoes: {}};
+const SECOES = ["local", "ind", "ibge", "wd", "tse", "wpMun", "wpPref"];
+
+function definirSecao(nome, patch, token) {
+  if (token !== S.token) return;  // resposta de um município anterior: descarta
+  S.secoes[nome] = {...(S.secoes[nome] || {}), ...patch, em: new Date()};
+  render();
+}
+
+async function carregar(nome, token, fn) {
+  definirSecao(nome, {status: "carregando", erro: null}, token);
+  try { definirSecao(nome, {status: "ok", dados: await fn()}, token); }
+  catch (e) { definirSecao(nome, {status: "erro", erro: e.message || String(e)}, token); }
+}
+
+async function abrirMunicipio(uf, cod) {
+  const token = ++S.token;
+  S.cod = cod; S.secoes = {}; S.consultadoEm = new Date();
+  history.replaceState(null, "", `#/${uf}/${cod}`);
+  const idx = S.filtro.findIndex(m => m.id === cod);
+  if (idx >= 0 && idx !== S.ativo) { S.ativo = idx; pintarLista(); }
+  montarDoc();
+  if (window.matchMedia && matchMedia("(max-width:860px)").matches) $("#main").scrollIntoView({behavior: "smooth", block: "start"});
+  const pWd = carregar("wd", token, () => Fontes.wikidata(cod));
+  carregar("local", token, () => Fontes.localidade(cod));
+  carregar("ind", token, () => Fontes.indicadores(cod));
+  carregar("ibge", token, () => Fontes.ibgePrefeito(cod));
+  if (uf === "DF") definirSecao("tse", {status: "vazio"}, token);
+  else carregar("tse", token, async () => {
+    const d = await Fontes.tse(uf);
+    atualizarStatusTSE();
+    return {registro: d.municipios[cod] || null, gerado_em: d.gerado_em, fontes: d.fontes};
+  });
+  await pWd;
+  const wd = S.secoes.wd?.dados;
+  if (token !== S.token) return;
+  if (wd?.artigo) carregar("wpMun", token, () => Fontes.wikipedia(wd.artigo));
+  else definirSecao("wpMun", {status: "vazio"}, token);
+  if (wd?.prefeito?.artigo) carregar("wpPref", token, () => Fontes.wikipedia(wd.prefeito.artigo));
+  else definirSecao("wpPref", {status: "vazio"}, token);
+}
+
+/* ================================================================ reconciliação */
+function reconciliar() {
+  const tse = S.secoes.tse?.dados?.registro;
+  const ibge = S.secoes.ibge?.dados?.prefeito;
+  const wd = S.secoes.wd?.dados?.prefeito;
+  const pendentes = ["tse", "ibge", "wd"].filter(k => (S.secoes[k]?.status || "carregando") === "carregando");
+  const linhas = [];
+  if (tse) {
+    const p = tse.prefeito, e = tse.eleicao;
+    linhas.push({fonte: "TSE", ref: `${e.suplementar ? "Eleição suplementar" : "Eleição"} de ${fmtData(e.data) || e.ano}`,
+      nome: p.nome_urna ? `${titulo(p.nome_urna)} (${titulo(p.nome)})` : titulo(p.nome), chaves: [p.nome, p.nome_urna], base: true});
+  }
+  if (ibge?.valor) linhas.push({fonte: "IBGE Cidades", ref: `Referência ${ibge.ano}`, nome: titulo(ibge.valor), chaves: [ibge.valor]});
+  if (wd?.nome) linhas.push({fonte: "Wikidata", ref: wd.inicio ? `No cargo desde ${fmtData(wd.inicio)}` : "Sem data de início", nome: wd.nome, chaves: [wd.nome]});
+
+  const base = linhas.find(l => l.base) || linhas[0];
+  for (const l of linhas) {
+    l.confere = l === base ? null : l.chaves.some(a => base.chaves.some(b => a && b && nomesCompativeis(a, b)));
+  }
+  const comparadas = linhas.filter(l => l.confere !== null);
+  let nivel, titulo_, texto;
+  if (!linhas.length) {
+    nivel = "info"; titulo_ = pendentes.length ? "Consultando as fontes" : "Nenhuma fonte informou o prefeito";
+    texto = pendentes.length ? "Aguarde o retorno do TSE, do IBGE e da Wikidata." : "Verifique o site oficial da prefeitura ou a Câmara Municipal.";
+  } else if (comparadas.length && comparadas.some(l => !l.confere)) {
+    nivel = "warn"; titulo_ = "As fontes divergem sobre quem está no cargo";
+    texto = "Causas comuns: cassação, renúncia, morte, afastamento judicial, eleição suplementar ou defasagem de uma das bases. Confirme no site da prefeitura antes de usar este briefing.";
+  } else if (comparadas.length && pendentes.length) {
+    nivel = "info"; titulo_ = `Conferindo: ${linhas.length} fontes concordam até agora`;
+    texto = "Ainda há fontes respondendo; o veredito sai quando todas retornarem.";
+  } else if (comparadas.length) {
+    nivel = "ok"; titulo_ = `Consistente em ${linhas.length} fontes`;
+    texto = "Todas as fontes consultadas apontam a mesma pessoa no cargo.";
+  } else {
+    nivel = "info"; titulo_ = "Apenas uma fonte informou o prefeito";
+    texto = pendentes.length ? "Ainda há fontes respondendo." : "Sem segunda fonte para confirmar. Trate o dado como provisório.";
+  }
+  if (tse?.eleicao?.suplementar && nivel !== "warn") texto += " O mandato atual vem de eleição suplementar.";
+  return {nivel, titulo: titulo_, texto, linhas};
+}
+
+/* ================================================================ render */
+const ultimoHTML = {};
+function pintar(id, html) {
+  const el = document.getElementById(id);
+  if (el && ultimoHTML[id] !== html) { el.innerHTML = html; ultimoHTML[id] = html; }
+}
+const skel = (n = 3) => Array.from({length: n}, (_, i) => `<div class="skel" style="width:${92 - i * 17}%"></div>`).join("");
+const erroBox = (msg, sec) => `<div class="err"><span>${esc(msg)}</span><button class="btn small" data-retry="${esc(sec)}">Tentar de novo</button></div>`;
+
+function montarDoc() {
+  for (const k in ultimoHTML) delete ultimoHTML[k];
+  $("#doc").innerHTML = `
+    <div class="toolbar">
+      <button class="btn" id="b-print">Imprimir ou salvar PDF</button>
+      <button class="btn" id="b-md">Copiar em Markdown</button>
+      <button class="btn" id="b-link">Copiar link</button>
+    </div>
+    <header class="mun-head" id="s-head"></header>
+    <section class="block" aria-labelledby="h-gov"><h3 id="h-gov">Quem governa</h3><div id="s-gov"></div></section>
+    <section class="block" aria-labelledby="h-mand"><h3 id="h-mand">Situação do mandato</h3><div id="s-mand"></div></section>
+    <section class="block" aria-labelledby="h-ind"><h3 id="h-ind">Indicadores do município</h3><div id="s-ind"></div></section>
+    <section class="block" aria-labelledby="h-traj"><h3 id="h-traj">Trajetória do prefeito</h3><div id="s-traj"></div></section>
+    <section class="block" aria-labelledby="h-sobre"><h3 id="h-sobre">Sobre o município</h3><div id="s-sobre"></div></section>
+    <section class="block" aria-labelledby="h-fontes"><h3 id="h-fontes">Fontes e proveniência</h3><div id="s-fontes"></div></section>`;
+  render();
+}
+
+function render() {
+  if (!S.cod || !$("#s-head")) return;
+  pintar("s-head", rHead());
+  pintar("s-gov", rGov());
+  pintar("s-mand", rMandato());
+  pintar("s-ind", rInd());
+  pintar("s-traj", rTraj());
+  pintar("s-sobre", rSobre());
+  pintar("s-fontes", rFontes());
+}
+
+function rHead() {
+  const loc = S.secoes.local, item = S.municipios.find(m => m.id === S.cod);
+  const nome = loc?.dados?.nome || item?.nome || "";
+  const uf = loc?.dados?.uf || S.uf || "";
+  const wd = S.secoes.wd?.dados, gent = S.secoes.ibge?.dados?.gentilico?.valor;
+  const fatos = [];
+  if (loc?.dados?.regiao) fatos.push(`Região ${loc.dados.regiao}`);
+  if (loc?.dados?.intermediaria) fatos.push(`região intermediária de ${loc.dados.intermediaria}`);
+  if (gent) fatos.push(`gentílico ${gent}`);
+  const ufs = uf.toLowerCase(), sl = slug(nome);
+  const links = [
+    link(`https://cidades.ibge.gov.br/brasil/${ufs}/${sl}/panorama`, "IBGE Cidades"),
+    wd?.site ? link(wd.site, "Site oficial") : "",
+    wd?.artigo ? link(wd.artigo, "Wikipedia") : "",
+    wd?.qid ? link(`https://www.wikidata.org/wiki/${wd.qid}`, "Wikidata") : "",
+    link(`https://hubpolitico.com.br/local/${ufs}/${sl}`, "HubPolítico"),
+  ].filter(Boolean).join("");
+  return `<p class="where">${esc(UF_NOME[uf] || uf)} · código IBGE ${esc(S.cod)}</p>
+    <h2>${esc(nome) || "Carregando…"}</h2>
+    <p class="facts">${fatos.length ? esc(fatos.join(", ")) + "." : (loc?.status === "carregando" ? "&nbsp;" : "")}</p>
+    <div class="links">${links}</div>`;
+}
+
+function rGov() {
+  if (S.uf === "DF") return `<p class="note">O Distrito Federal não tem prefeito: Brasília é governada pelo governador do DF, eleito nas eleições gerais.</p>`;
+  const st = S.secoes.tse, reg = st?.dados?.registro, wd = S.secoes.wd?.dados?.prefeito, ibge = S.secoes.ibge?.dados?.prefeito;
+  if (!reg && st?.status === "carregando") return skel(4);
+  if (!reg) {
+    const nome = wd?.nome || (ibge?.valor ? titulo(ibge.valor) : "");
+    const motivo = st?.status === "erro"
+      ? `Base do TSE indisponível para ${S.uf} (${st.erro}). Gere-a com o ETL ou importe o JSON pelo painel lateral.`
+      : "Este município não aparece na base do TSE carregada (veja _auditoria.json do ETL).";
+    return `${nome ? `<div class="gov">${retrato(wd, nome)}<div><p class="role">Prefeito, segundo fontes secundárias</p><h4>${esc(nome)}</h4>
+      <p class="full">Sem dados eleitorais oficiais carregados.</p></div></div>` : ""}<p class="note" style="margin-top:12px">${esc(motivo)}</p>`;
+  }
+  const p = reg.prefeito, e = reg.eleicao, id = idade(p.nascimento);
+  const rec = reconciliar();
+  const contra = rec.nivel === "warn" ? rec.linhas.filter(l => l.confere === false) : [];
+  const outroNome = contra.length >= 2 && nomesCompativeis(contra[0].chaves[0], contra[1].chaves[0]) ? contra[0].nome : null;
+  const alerta = contra.length
+    ? `<p class="alerta" role="note">${outroNome
+        ? `${esc(contra.map(l => l.fonte).join(" e "))} indicam <strong>${esc(outroNome)}</strong> no cargo. Os dados abaixo são do eleito na eleição registrada no TSE.`
+        : `Há fonte que aponta outra pessoa no cargo (veja Situação do mandato). Os dados abaixo são do eleito na eleição registrada no TSE.`}</p>` : "";
+  const partido = `<span class="party">${esc(p.partido || "?")}</span>${esc(p.partido_nome ? titulo(p.partido_nome) : "")}`;
+  const kv = [
+    ["Partido", partido + (p.federacao ? ` <span class="note">· federação ${esc(p.federacao)}</span>` : "")],
+    ["Eleição", `${esc(fmtData(e.data) || e.ano)}${e.turno === 2 ? ", 2º turno" : ""}${e.suplementar ? " (suplementar)" : ""}`],
+    p.votos != null ? ["Votos", `${fmtNum(p.votos)}${p.votos_pct != null ? ` <span class="note">(${fmtNum(p.votos_pct, 1)}% dos válidos)</span>` : ""}`] : null,
+    reg.vice ? ["Vice", esc(titulo(reg.vice.nome_urna || reg.vice.nome)) + (reg.vice.partido ? ` <span class="note">${esc(reg.vice.partido)}</span>` : "")] : null,
+    id != null ? ["Idade", `${id} anos <span class="note">(nascimento em ${esc(fmtData(p.nascimento))})</span>`] : null,
+    p.ocupacao ? ["Ocupação declarada", esc(titulo(p.ocupacao))] : null,
+    p.instrucao ? ["Instrução", esc(titulo(p.instrucao))] : null,
+    p.bens_total != null ? ["Bens declarados", `${fmtBRL(p.bens_total)} <span class="note">em ${p.bens_qtd} ${p.bens_qtd === 1 ? "item" : "itens"}, ao TSE em ${esc(e.ano)}</span>`] : null,
+  ].filter(Boolean);
+  const divulga = p.sq && e.cd_eleicao && reg.tse?.sg_ue
+    ? link(`https://divulgacandcontas.tse.jus.br/divulga/#/candidato/${e.ano}/${e.cd_eleicao}/${reg.tse.sg_ue}/${p.sq}`, "Ver candidatura no DivulgaCandContas") : "";
+  const cargo = contra.length ? `Eleito${p.genero === "FEMININO" ? "a" : ""} em ${esc(e.ano)}, segundo o TSE`
+    : `Prefeito${p.genero === "FEMININO" ? "a" : ""} de ${esc(S.secoes.local?.dados?.nome || reg.tse?.nm_ue || "")}`;
+  return `${alerta}<div class="gov">${retrato(wd && nomesCompativeis(wd.nome, p.nome) ? wd : null, p.nome_urna || p.nome)}
+    <div><p class="role">${cargo}</p>
+      <h4>${esc(titulo(p.nome_urna || p.nome))}</h4>
+      <p class="full">${esc(titulo(p.nome))}</p>
+      <dl class="kv">${kv.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join("")}</dl>
+      ${divulga ? `<p class="links" style="margin-top:10px">${divulga}</p>` : ""}
+    </div></div>`;
+}
+
+function retrato(wd, nome) {
+  const src = safeUrl(wd?.img);
+  return src
+    ? `<img class="portrait" src="${esc(src)}" alt="Foto de ${esc(nome)} (Wikimedia Commons)" loading="lazy" referrerpolicy="no-referrer" data-fallback="${esc(iniciais(nome))}">`
+    : `<div class="portrait" aria-hidden="true">${esc(iniciais(nome))}</div>`;
+}
+
+function rMandato() {
+  if (S.uf === "DF") return `<p class="note">Não se aplica.</p>`;
+  const r = reconciliar();
+  const linhas = r.linhas.map(l => `<tr><td>${esc(l.fonte)}</td><td>${esc(l.nome)}<div class="note">${esc(l.ref)}</div></td>
+    <td>${l.confere === null ? `<span class="tag info">base</span>` : l.confere ? `<span class="tag ok">confere</span>` : `<span class="tag warn">diverge</span>`}</td></tr>`).join("");
+  return `<div class="status ${r.nivel}" role="status"><div class="status-top"><span class="dot" aria-hidden="true"></span>
+    <div><strong>${esc(r.titulo)}</strong><p>${esc(r.texto)}</p></div></div>
+    ${linhas ? `<div class="tablewrap"><table class="src"><thead><tr><th>Fonte</th><th>Quem consta no cargo</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div>` : ""}</div>`;
+}
+
+function rInd() {
+  const s = S.secoes.ind;
+  if (!s || s.status === "carregando") return skel(3);
+  if (s.status === "erro") return erroBox(`Indicadores do IBGE indisponíveis (${s.erro}).`, "ind");
+  const cards = s.dados.itens.map(i => {
+    const v = i.pre ? `${esc(i.unit)} ${fmtNum(i.valor, i.dec)}` : `${fmtNum(i.valor, i.dec)}${i.unit ? ` <span class="unit">${esc(i.unit)}</span>` : ""}`;
+    return `<div class="ind"><div class="lbl">${esc(i.lbl)}</div><div class="val">${v}</div><div class="yr">${esc(i.ano)} · IBGE</div></div>`;
+  }).join("");
+  const falta = s.dados.faltaram ? `<p class="note" style="margin-top:8px">${s.dados.faltaram} indicador(es) não responderam a tempo no IBGE e ficaram de fora.</p>` : "";
+  return `<div class="grid-ind">${cards}</div>${falta}`;
+}
+
+function rTraj() {
+  const reg = S.secoes.tse?.dados?.registro, wp = S.secoes.wpPref;
+  const partes = [];
+  if (reg?.trajetoria?.length) {
+    partes.push(`<ul class="timeline">${reg.trajetoria.map(t => {
+      const ganhou = /^eleit/i.test(t.resultado || "");
+      return `<li class="${ganhou ? "won" : ""}"><span class="yr">${esc(t.ano)}</span>${esc(t.cargo)} em ${esc(titulo(t.local || ""))}
+        <div class="meta">${esc([t.partido, t.resultado ? fmtResultado(t.resultado) : ""].filter(Boolean).join(" · "))}</div></li>`;
+    }).join("")}</ul><p class="attrib">Candidaturas anteriores no TSE, ligadas por nome completo e data de nascimento.</p>`);
+  }
+  if (reg?.eleicoes_anteriores_no_mandato?.length) {
+    partes.push(`<p class="note">Antes da eleição vigente, o cargo foi disputado em: ${reg.eleicoes_anteriores_no_mandato.map(a =>
+      esc(`${fmtData(a.data)} (${titulo(a.nome_urna || "")}, ${a.partido || ""})`)).join("; ")}.</p>`);
+  }
+  if (wp?.status === "carregando") partes.push(skel(3));
+  else if (wp?.status === "ok" && wp.dados?.extrato) {
+    partes.push(`<p class="prose">${esc(wp.dados.extrato)}</p><p class="attrib">Resumo da Wikipedia (${link(wp.dados.url, wp.dados.titulo)}), licença CC BY-SA. Conteúdo colaborativo: confirme fatos sensíveis na fonte primária.</p>`);
+  }
+  if (!partes.length) {
+    const tseStatus = S.secoes.tse?.status;
+    if (tseStatus === "carregando" || S.secoes.wd?.status === "carregando") return skel(2);
+    return `<p class="note">Sem trajetória disponível. Para incluir o histórico eleitoral, rode o ETL com <code>--historico</code> e os arquivos de candidaturas de anos anteriores.</p>`;
+  }
+  return partes.join("");
+}
+
+function rSobre() {
+  const s = S.secoes.wpMun;
+  if (!s || s.status === "carregando" || S.secoes.wd?.status === "carregando") return skel(3);
+  if (s.status === "erro") return erroBox(`Wikipedia indisponível (${s.erro}).`, "wpMun");
+  if (s.status !== "ok" || !s.dados?.extrato) return `<p class="note">Sem verbete localizado na Wikipedia em português.</p>`;
+  return `<p class="prose">${esc(s.dados.extrato)}</p><p class="attrib">Resumo da Wikipedia (${link(s.dados.url, s.dados.titulo)}), licença CC BY-SA.</p>`;
+}
+
+const NOMES_FONTE = {
+  local: ["IBGE — Localidades", "Divisão territorial"],
+  ind: ["IBGE — API de Pesquisas", "Indicadores do painel Cidades"],
+  ibge: ["IBGE Cidades — painel", "Prefeito e gentílico"],
+  tse: ["TSE — Dados Abertos (via ETL)", "Eleição, votos, bens, trajetória"],
+  wd: ["Wikidata", "Chefe de governo, site, foto"],
+  wpMun: ["Wikipedia — município", "Resumo do verbete"],
+  wpPref: ["Wikipedia — prefeito", "Resumo do verbete"],
+};
+function rFontes() {
+  const linhas = SECOES.map(k => {
+    const s = S.secoes[k] || {status: "carregando"}, [nome, uso] = NOMES_FONTE[k];
+    let tag;
+    if (s.status === "ok") tag = (k === "tse" && !s.dados?.registro) ? `<span class="tag warn">sem registro</span>` : `<span class="tag ok">ok</span>`;
+    else if (s.status === "erro") tag = `<span class="tag warn" title="${esc(s.erro)}">falhou</span>`;
+    else if (s.status === "vazio") tag = `<span class="tag info">não se aplica</span>`;
+    else tag = `<span class="tag info">consultando</span>`;
+    let det = s.status === "erro" ? esc(s.erro) : "";
+    if (k === "tse" && s.dados?.gerado_em) det = `Base gerada em ${esc(fmtData(s.dados.gerado_em))}`;
+    if (k === "ind" && s.dados?.faltaram) det = `${s.dados.faltaram} indicador(es) sem resposta`;
+    return `<tr><td>${esc(nome)}</td><td class="note">${esc(uso)}</td><td>${tag}</td><td class="note">${det}</td></tr>`;
+  }).join("");
+  return `<div class="tablewrap"><table class="src" style="border:1px solid var(--line)"><thead><tr><th>Fonte</th><th>Uso no briefing</th><th>Status</th><th>Detalhe</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <p class="note" style="margin-top:10px">Consulta feita em ${esc(S.consultadoEm.toLocaleString("pt-BR"))}. Dados de agentes públicos, restritos ao exercício e à disputa do mandato (LGPD, art. 7º, III e §4º). Cor/raça, CPF, título e e-mail não são exibidos.</p>`;
+}
+
+/* ================================================================ exportação */
+function markdown() {
+  const loc = S.secoes.local?.dados || {}, reg = S.secoes.tse?.dados?.registro, r = reconciliar();
+  const nome = loc.nome || S.municipios.find(m => m.id === S.cod)?.nome || "";
+  const L = [`# Briefing — ${nome}/${S.uf}`, "", `Código IBGE ${S.cod}. Gerado em ${new Date().toLocaleString("pt-BR")}.`, ""];
+  if (reg) {
+    const p = reg.prefeito, e = reg.eleicao;
+    L.push("## Quem governa", "", `**${titulo(p.nome_urna || p.nome)}** (${titulo(p.nome)}) — ${p.partido || "?"}`,
+      `- Eleição: ${fmtData(e.data) || e.ano}${e.turno === 2 ? ", 2º turno" : ""}${e.suplementar ? " (suplementar)" : ""}`);
+    if (p.votos != null) L.push(`- Votos: ${fmtNum(p.votos)}${p.votos_pct != null ? ` (${fmtNum(p.votos_pct, 1)}% dos válidos)` : ""}`);
+    if (reg.vice) L.push(`- Vice: ${titulo(reg.vice.nome_urna || reg.vice.nome)} (${reg.vice.partido || "?"})`);
+    if (p.bens_total != null) L.push(`- Bens declarados ao TSE: ${fmtBRL(p.bens_total)} (${p.bens_qtd} itens)`);
+    L.push("");
+  }
+  L.push("## Situação do mandato", "", `**${r.titulo}.** ${r.texto}`, "");
+  for (const l of r.linhas) L.push(`- ${l.fonte}: ${l.nome} — ${l.ref}${l.confere === false ? " (DIVERGE)" : ""}`);
+  const ind = S.secoes.ind?.dados?.itens || [];
+  if (ind.length) { L.push("", "## Indicadores", ""); for (const i of ind) L.push(`- ${i.lbl}: ${i.pre ? i.unit + " " : ""}${fmtNum(i.valor, i.dec)}${i.pre ? "" : " " + i.unit} (${i.ano})`); }
+  const wp = S.secoes.wpMun?.dados;
+  if (wp?.extrato) L.push("", "## Sobre o município", "", wp.extrato, "", `Fonte: ${wp.url} (CC BY-SA)`);
+  L.push("", "---", "Fontes: IBGE, TSE (dados abertos), Wikidata, Wikipedia.");
+  return L.join("\n");
+}
+
+async function copiar(texto, msg) {
+  try { await navigator.clipboard.writeText(texto); toast(msg); }
+  catch { toast("Não foi possível copiar. Selecione e copie manualmente."); }
+}
+
+/* ================================================================ seleção */
+function montarMapa() {
+  $("#ufmap").innerHTML = UFS.map(([uf, r, c, nome]) =>
+    `<button class="uf" style="grid-row:${r + 1};grid-column:${c + 1}" data-uf="${uf}" aria-pressed="false" title="${esc(nome)}" aria-label="${esc(nome)}">${uf}</button>`).join("");
+}
+
+async function escolherUF(uf, codAlvo) {
+  S.uf = uf; S.municipios = []; S.filtro = []; S.ativo = -1;
+  document.querySelectorAll(".uf").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.uf === uf)));
+  $("#ufname").textContent = UF_NOME[uf] || uf;
+  const q = $("#q"); q.disabled = true; q.value = ""; q.placeholder = "Carregando municípios…";
+  $("#munlist").innerHTML = ""; $("#count").textContent = "";
+  Fontes.tse(uf).then(atualizarStatusTSE).catch(atualizarStatusTSE);  // pré-carrega a base da UF
+  try {
+    const lista = await Fontes.municipios(uf);
+    if (S.uf !== uf) return;
+    S.municipios = lista;
+    q.disabled = false; q.placeholder = `Buscar entre ${lista.length} municípios`;
+    filtrar("");
+    if (codAlvo && lista.some(m => m.id === codAlvo)) abrirMunicipio(uf, codAlvo);
+    else if (lista.length === 1) abrirMunicipio(uf, lista[0].id);
+    else q.focus();
+  } catch (e) {
+    q.placeholder = "Falha ao carregar";
+    $("#count").innerHTML = `IBGE indisponível (${esc(e.message)}). <button class="btn small" id="b-retry-uf">Tentar de novo</button>`;
+    $("#b-retry-uf").onclick = () => escolherUF(uf);
+  }
+}
+
+function filtrar(txt) {
+  const t = normNome(txt);
+  S.filtro = t ? S.municipios.filter(m => normNome(m.nome).includes(t)) : S.municipios.slice();
+  S.ativo = S.filtro.length ? 0 : -1;
+  pintarLista();
+}
+
+function pintarLista() {
+  const ul = $("#munlist");
+  ul.innerHTML = S.filtro.map((m, i) =>
+    `<li role="option" id="opt-${m.id}" data-id="${m.id}" aria-selected="${i === S.ativo}"><span>${esc(m.nome)}</span><span class="cod">${m.id}</span></li>`).join("");
+  $("#q").setAttribute("aria-expanded", String(S.filtro.length > 0));
+  $("#q").setAttribute("aria-activedescendant", S.ativo >= 0 ? `opt-${S.filtro[S.ativo].id}` : "");
+  $("#count").textContent = S.municipios.length ? `${S.filtro.length} de ${S.municipios.length}` : "";
+}
+
+function moverAtivo(d) {
+  if (!S.filtro.length) return;
+  S.ativo = (S.ativo + d + S.filtro.length) % S.filtro.length;
+  pintarLista();
+  document.getElementById(`opt-${S.filtro[S.ativo].id}`)?.scrollIntoView({block: "nearest"});
+}
+
+function atualizarStatusTSE() {
+  const d = S.uf && Fontes.tseUF[S.uf];
+  $("#tse-status").textContent = d
+    ? `Base do TSE (${S.uf}): ${Object.keys(d.municipios).length} municípios, gerada em ${fmtData(d.gerado_em)}.`
+    : `Base do TSE${S.uf ? ` (${S.uf})` : ""}: não carregada.`;
+}
+
+/* ================================================================ eventos */
+function ligarEventos() {
+  $("#ufmap").addEventListener("click", e => { const b = e.target.closest(".uf"); if (b) escolherUF(b.dataset.uf); });
+  const q = $("#q");
+  q.addEventListener("input", () => filtrar(q.value));
+  q.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { e.preventDefault(); moverAtivo(1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); moverAtivo(-1); }
+    else if (e.key === "Enter" && S.ativo >= 0) { e.preventDefault(); abrirMunicipio(S.uf, S.filtro[S.ativo].id); $("#main").focus(); }
+  });
+  $("#munlist").addEventListener("click", e => {
+    const li = e.target.closest("li[data-id]"); if (!li) return;
+    S.ativo = S.filtro.findIndex(m => m.id === li.dataset.id); pintarLista();
+    abrirMunicipio(S.uf, li.dataset.id);
+  });
+  $("#doc").addEventListener("click", e => {
+    const t = e.target;
+    if (t.id === "b-print") window.print();
+    else if (t.id === "b-md") copiar(markdown(), "Briefing copiado em Markdown.");
+    else if (t.id === "b-link") copiar(location.href, "Link copiado.");
+    else if (t.dataset.retry) {
+      const sec = t.dataset.retry, cod = S.cod, token = S.token;
+      for (const k of [...cache.keys()]) if (k.includes(cod)) cache.delete(k);
+      const fn = {ind: () => Fontes.indicadores(cod), wpMun: () => Fontes.wikipedia(S.secoes.wd?.dados?.artigo)}[sec];
+      if (fn) carregar(sec, token, fn);
+    }
+  });
+  // foto quebrada vira monograma (CSP não permite onerror inline)
+  $("#doc").addEventListener("error", e => {
+    const img = e.target;
+    if (img.tagName === "IMG" && img.classList.contains("portrait")) {
+      const d = document.createElement("div"); d.className = "portrait"; d.setAttribute("aria-hidden", "true");
+      d.textContent = img.dataset.fallback || "?"; img.replaceWith(d);
+    }
+  }, true);
+  $("#tse-file").addEventListener("change", async e => {
+    let ok = 0;
+    for (const f of e.target.files) {
+      try {
+        const d = JSON.parse(await f.text());
+        if (!d.uf || !d.municipios) throw new Error("formato inesperado");
+        Fontes.tseUF[d.uf.toUpperCase()] = d; ok++;
+      } catch (err) { toast(`${f.name}: ${err.message}`); }
+    }
+    e.target.value = "";
+    if (ok) { toast(`${ok} arquivo(s) do TSE importado(s).`); atualizarStatusTSE(); if (S.cod) abrirMunicipio(S.uf, S.cod); }
+  });
+  window.addEventListener("hashchange", lerHash);
+}
+
+function lerHash() {
+  const m = location.hash.match(/^#\/([A-Z]{2})(?:\/(\d{7}))?$/);
+  if (!m || !UF_NOME[m[1]]) return;
+  if (m[1] !== S.uf) escolherUF(m[1], m[2]);
+  else if (m[2] && m[2] !== S.cod) abrirMunicipio(m[1], m[2]);
+}
+
+/* ================================================================ testes expostos (sem efeito em produção) */
+window.__BM__ = {limparCache: () => cache.clear(), nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
+
+montarMapa();
+ligarEventos();
+lerHash();
+})();
+</script>
+</body>
+</html>
