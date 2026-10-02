@@ -1,0 +1,50 @@
+{
+ "gerado_em": "2026-10-02T23:02:16+00:00",
+ "fontes": {
+  "candidaturas": [
+   "cand_2024.zip",
+   "cand_2026.zip"
+  ],
+  "votos": [
+   "votos_2024.zip"
+  ],
+  "bens": [
+   "bens_2024.zip"
+  ],
+  "historico": [
+   "hist_2016.zip",
+   "hist_2018.zip",
+   "hist_2020.zip",
+   "hist_2022.zip"
+  ],
+  "orgao": "Tribunal Superior Eleitoral — Portal de Dados Abertos"
+ },
+ "ufs": {
+  "AC": 22,
+  "AL": 102,
+  "AM": 62,
+  "AP": 16,
+  "BA": 417,
+  "CE": 184,
+  "ES": 78,
+  "GO": 244,
+  "MA": 214,
+  "MG": 852,
+  "MS": 79,
+  "MT": 141,
+  "PA": 143,
+  "PB": 223,
+  "PE": 184,
+  "PI": 224,
+  "PR": 399,
+  "RJ": 91,
+  "RN": 166,
+  "RO": 52,
+  "RR": 15,
+  "RS": 496,
+  "SC": 295,
+  "SE": 72,
+  "SP": 641,
+  "TO": 139
+ }
+}

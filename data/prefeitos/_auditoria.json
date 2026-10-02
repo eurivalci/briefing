@@ -1,0 +1,17 @@
+{
+ "via_depara": 5551,
+ "via_nome": [],
+ "nao_resolvidos": [
+  {
+   "sg_ue": "73709",
+   "uf": "MT",
+   "nome": "BOA ESPERANÇA DO NORTE",
+   "candidatos_ibge": []
+  }
+ ],
+ "municipios_sem_eleito_nos_arquivos": [],
+ "total_municipios_com_prefeito": 5551,
+ "votos_carregados": true,
+ "bens_carregados": true,
+ "historico_carregado": true
+}
