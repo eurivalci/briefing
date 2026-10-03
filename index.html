@@ -90,7 +90,9 @@ section.block > h3{font:600 20px/1.3 var(--serif); margin:0 0 14px}
 .ind .yr{font-size:12px; color:var(--faint)}
 
 .gov{display:grid; grid-template-columns:132px minmax(0,1fr); gap:22px; align-items:start}
-.portrait{width:132px; aspect-ratio:4/5; border-radius:var(--r-md); border:1px solid var(--line); background:var(--raise); object-fit:cover; display:grid; place-items:center; font:600 40px var(--serif); color:var(--brass); overflow:hidden}
+.portrait{width:132px; height:auto; aspect-ratio:4/5; border-radius:var(--r-md); border:1px solid var(--line); background:var(--raise); object-fit:cover; display:grid; place-items:center; font:600 40px var(--serif); color:var(--brass); overflow:hidden}
+.foto{margin:0}
+.foto figcaption{font-size:11px; color:var(--faint); margin-top:5px; line-height:1.35; max-width:132px}
 .gov .role{color:var(--muted); font-size:14px; margin:0}
 .gov h4{font:700 30px/1.15 var(--serif); margin:2px 0 4px}
 .gov .full{color:var(--muted); margin:0 0 12px}
@@ -203,6 +205,7 @@ table.src th{color:var(--muted); font-weight:500; font-size:13px}
 const CONFIG = {
   // Arquivos gerados por etl/build_prefeitos.py. Ajuste se publicar em outro caminho.
   tseUrl: (uf) => `./data/prefeitos/${uf.toLowerCase()}.json`,
+  fotoBase: "./data/",  // prefeito.foto vem como "fotos/<ibge>.webp?v=<sq>" 
   ibge: "https://servicodados.ibge.gov.br/api/v1",
   wikidata: "https://query.wikidata.org/sparql",
   wikipedia: "https://pt.wikipedia.org/api/rest_v1/page/summary/",
@@ -602,7 +605,7 @@ function rGov() {
     const motivo = st?.status === "erro"
       ? `Base do TSE indisponível para ${S.uf} (${st.erro}). Gere-a com o ETL ou importe o JSON pelo painel lateral.`
       : "Este município não aparece na base do TSE carregada (veja _auditoria.json do ETL).";
-    return `${nome ? `<div class="gov">${retrato(wd, nome)}<div><p class="role">Prefeito, segundo fontes secundárias</p><h4>${esc(nome)}</h4>
+    return `${nome ? `<div class="gov">${retrato(fotoWikidata(wd), nome)}<div><p class="role">Prefeito, segundo fontes secundárias</p><h4>${esc(nome)}</h4>
       <p class="full">Sem dados eleitorais oficiais carregados.</p></div></div>` : ""}<p class="note" style="margin-top:12px">${esc(motivo)}</p>`;
   }
   const p = reg.prefeito, e = reg.eleicao, id = idade(p.nascimento);
@@ -628,7 +631,8 @@ function rGov() {
     ? link(`https://divulgacandcontas.tse.jus.br/divulga/#/candidato/${e.ano}/${e.cd_eleicao}/${reg.tse.sg_ue}/${p.sq}`, "Ver candidatura no DivulgaCandContas") : "";
   const cargo = contra.length ? `Eleito${p.genero === "FEMININO" ? "a" : ""} em ${esc(e.ano)}, segundo o TSE`
     : `Prefeito${p.genero === "FEMININO" ? "a" : ""} de ${esc(S.secoes.local?.dados?.nome || reg.tse?.nm_ue || "")}`;
-  return `${alerta}<div class="gov">${retrato(wd && nomesCompativeis(wd.nome, p.nome) ? wd : null, p.nome_urna || p.nome)}
+  const foto = fotoTSE(p) || (wd && nomesCompativeis(wd.nome, p.nome) ? fotoWikidata(wd) : null);
+  return `${alerta}<div class="gov">${retrato(foto, p.nome_urna || p.nome)}
     <div><p class="role">${cargo}</p>
       <h4>${esc(titulo(p.nome_urna || p.nome))}</h4>
       <p class="full">${esc(titulo(p.nome))}</p>
@@ -637,11 +641,20 @@ function rGov() {
     </div></div>`;
 }
 
-function retrato(wd, nome) {
+/** Foto oficial do TSE: caminho relativo validado antes de virar src. */
+function fotoTSE(p) {
+  const f = p && p.foto;
+  if (typeof f !== "string" || !/^fotos\/\d{7}\.webp(\?v=\d{1,20})?$/.test(f)) return null;
+  return {src: CONFIG.fotoBase + f, credito: "Foto: TSE, divulgação de candidaturas (CC BY)"};
+}
+function fotoWikidata(wd) {
   const src = safeUrl(wd?.img);
-  return src
-    ? `<img class="portrait" src="${esc(src)}" alt="Foto de ${esc(nome)} (Wikimedia Commons)" loading="lazy" referrerpolicy="no-referrer" data-fallback="${esc(iniciais(nome))}">`
-    : `<div class="portrait" aria-hidden="true">${esc(iniciais(nome))}</div>`;
+  return src ? {src, credito: "Foto: Wikimedia Commons"} : null;
+}
+function retrato(foto, nome) {
+  if (!foto) return `<div class="portrait" aria-hidden="true">${esc(iniciais(nome))}</div>`;
+  return `<figure class="foto"><img class="portrait" src="${esc(foto.src)}" alt="Foto de ${esc(titulo(nome))}" width="132" height="165"
+    loading="lazy" decoding="async" referrerpolicy="no-referrer" data-fallback="${esc(iniciais(nome))}"><figcaption>${esc(foto.credito)}</figcaption></figure>`;
 }
 
 function rMandato() {
@@ -846,7 +859,9 @@ function ligarEventos() {
     const img = e.target;
     if (img.tagName === "IMG" && img.classList.contains("portrait")) {
       const d = document.createElement("div"); d.className = "portrait"; d.setAttribute("aria-hidden", "true");
-      d.textContent = img.dataset.fallback || "?"; img.replaceWith(d);
+      d.textContent = img.dataset.fallback || "?";
+      const fig = img.closest("figure.foto");
+      (fig || img).replaceWith(d);
     }
   }, true);
   $("#tse-file").addEventListener("change", async e => {
@@ -872,7 +887,7 @@ function lerHash() {
 }
 
 /* ================================================================ testes expostos (sem efeito em produção) */
-window.__BM__ = {limparCache: () => cache.clear(), nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
+window.__BM__ = {limparCache: () => cache.clear(), fotoTSE, nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
 
 montarMapa();
 ligarEventos();

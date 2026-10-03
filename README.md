@@ -25,10 +25,13 @@ O TSE não serve dados utilizáveis direto do navegador: são ZIPs de centenas d
 ```
 index.html                       aplicação (arquivo único, sem dependências)
 etl/build_prefeitos.py           TSE → JSON por UF, chave = código IBGE
+etl/fotos_prefeitos.py           fotos oficiais do TSE → WebP 240×300
 etl/municipios_brasileiros_tse.csv  de-para IBGE↔TSE (5.570 linhas)
 data/prefeitos/<uf>.json         gerado pelo ETL
 data/prefeitos/_indice.json      cobertura por UF e data de geração
 data/prefeitos/_auditoria.json   o que não casou: ler após cada execução
+data/fotos/<ibge>.webp           foto do prefeito (~8 KB)
+data/fotos/_manifest.json        ibge → sq e lista de quem ficou sem foto
 .github/workflows/etl-prefeitos.yml
 tests/test_etl.py                ETL ponta a ponta com fixtures no layout do TSE
 tests/test_app.js                interface em jsdom com APIs simuladas
@@ -60,7 +63,7 @@ Depois, faça commit de `data/prefeitos/` e push. O Vercel publica sozinho.
 
 **Sem servidor:** abrindo o `index.html` direto do disco, use "Importar JSON da UF" no painel lateral. IBGE, Wikidata e Wikipedia continuam funcionando.
 
-**Testes:** `npm i && npm test`. Para checar só a sintaxe: `npm run check`.
+**Testes:** `npm i && npm test` (ETL, fotos e interface). Para as fotos localmente: `pip install pillow && python3 etl/fotos_prefeitos.py`. Para checar só a sintaxe: `npm run check`.
 
 ## Decisões de projeto
 
@@ -73,6 +76,8 @@ Depois, faça commit de `data/prefeitos/` e push. O Vercel publica sozinho.
 **Trajetória.** O vínculo entre eleições é feito por nome completo + data de nascimento, porque o TSE publica o CPF como `-4` desde 2024.
 
 **Campo "Prefeito" do IBGE.** O ID não fica fixo no código: a aplicação o descobre pelo nome do indicador na pesquisa 33, com cache de 30 dias.
+
+**Fotos.** A fonte é o conjunto "Fotos de candidatos" do TSE, com um ZIP por UF e licença CC BY. Os ZIPs trazem todos os candidatos e somam vários GB, então são lidos por HTTP Range: trafegam só o índice e as fotos dos prefeitos. Se o servidor não aceitar Range, o script baixa o ZIP completo, uma UF por vez. Fotos já processadas não são baixadas de novo; quando o prefeito muda, a foto é trocada e o parâmetro `?v=` invalida o cache. Na interface, a ordem é TSE, depois Wikidata (só se o nome conferir) e por fim as iniciais. O passo de fotos no workflow é tolerante a falha.
 
 **HubPolítico.** Entra apenas como link para a página do município. Não há raspagem: é empresa privada, e os dados equivalentes vêm da fonte primária (TSE).
 
