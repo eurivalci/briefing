@@ -82,7 +82,7 @@ def main():
     # ZIP do CE: 2 prefeitos + 60 "vereadores" com fotos pesadas (ruído incompressível)
     with zipfile.ZipFile(cdn / "foto_cand2024_CE_div.zip", "w", zipfile.ZIP_STORED) as z:
         z.writestr("FCE060000000001_div.jpg", jpeg((200, 30, 30)))
-        z.writestr("FCE060000000002_div.jpg", jpeg((30, 200, 30), (300, 300)))
+        z.writestr("FCE060000000002_div.jpg", jpeg((30, 200, 30), (300, 300)), compress_type=zipfile.ZIP_DEFLATED)
         for i in range(60):
             z.writestr(f"FCE0699999{i:05d}_div.jpg", os.urandom(200_000))
         z.writestr("FCE060000000009_div.jpg", b"isto nao e uma imagem")
@@ -101,7 +101,7 @@ def main():
     TRAFEGO["bytes"] = 0
     assert F.main(["--prefeitos", str(dirp), "--out", str(out), "--url", url]) == 0
     trafego_range = TRAFEGO["bytes"]
-    assert trafego_range < tamanho_zip * 0.25, f"Range deveria trafegar pouco: {trafego_range} de {tamanho_zip}"
+    assert trafego_range < tamanho_zip * 0.10, f"Range deveria trafegar pouco: {trafego_range} de {tamanho_zip}"
 
     for ibge in ("2304400", "2303709"):
         f = out / f"{ibge}.webp"
@@ -145,6 +145,40 @@ def main():
     assert (out2 / "2304400.webp").exists(), "fallback sem Range"
     assert "download" in json.loads((out2 / "_manifest.json").read_text())["ultima_execucao"]["ufs"]["CE/2024"]
     srv2.shutdown()
+
+    # ---------- 5) limite de tempo: para entre UFs, salva o progresso e retoma depois
+    with zipfile.ZipFile(cdn / "foto_cand2024_PB_div.zip", "w") as z:
+        z.writestr("FPB150000000001_div.jpg", jpeg((30, 30, 200)))
+    dir3, out3 = tmp / "pref3", tmp / "fotos3"
+    dir3.mkdir()
+    prefeitos(dir3, "CE", {"2304400": "060000000001"})
+    prefeitos(dir3, "PB", {"2507507": "150000000001"})
+    srv3 = servidor(tmp / "cdn", aceita_range=True)
+    url3 = f"http://127.0.0.1:{srv3.server_port}/eleicoes{{ano}}/foto_cand{{ano}}_{{uf}}_div.zip"
+
+    class Relogio:  # cada consulta ao relógio avança 1 minuto: deterministico
+        t = -60.0
+        @classmethod
+        def monotonic(cls):
+            cls.t += 60.0
+            return cls.t
+    real = F.time
+    F.time = Relogio
+    try:
+        F.main(["--prefeitos", str(dir3), "--out", str(out3), "--url", url3, "--limite-minutos", "2.5"])
+    finally:
+        F.time = real
+    m3 = json.loads((out3 / "_manifest.json").read_text(encoding="utf-8"))
+    assert m3["ultima_execucao"]["interrompido"] is True
+    assert "2304400" in m3["fotos"] and "2507507" not in m3["fotos"], m3["fotos"]
+    assert json.loads((dir3 / "ce.json").read_text())["municipios"]["2304400"]["prefeito"]["foto"], "CE salvo no checkpoint"
+    assert json.loads((dir3 / "pb.json").read_text())["municipios"]["2507507"]["prefeito"]["foto"] is None
+    F.main(["--prefeitos", str(dir3), "--out", str(out3), "--url", url3])
+    m3 = json.loads((out3 / "_manifest.json").read_text(encoding="utf-8"))
+    assert m3["ultima_execucao"]["ufs"]["CE/2024"] == "sem alterações", "retomada não refaz o que já foi feito"
+    assert "2507507" in m3["fotos"] and not m3["ultima_execucao"]["interrompido"]
+    assert not list(out3.glob("*.tmp")) and not list(dir3.glob("*.tmp")), "sem arquivos temporários"
+    srv3.shutdown()
 
     print(f"TODOS OS TESTES DE FOTOS PASSARAM (Range trafegou {trafego_range / 1e6:.2f} MB de um zip de {tamanho_zip / 1e6:.1f} MB)")
 
