@@ -7,6 +7,7 @@ Cenários: (A) API aceita lote; (B) API recusa lote e o coletor divide até 1 mu
 Uso: python3 tests/test_enriquecer.py
 """
 import contextlib
+import gzip
 import http.server
 import io
 import json
@@ -19,6 +20,8 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "etl"))
+import build_prefeitos as B  # noqa: E402
+import consolidar_prefeitos as C  # noqa: E402
 import enriquecer_municipios as E  # noqa: E402
 
 MUN = {
@@ -55,9 +58,11 @@ class H(http.server.BaseHTTPRequestHandler):
         pass
 
     def responder(self, obj, status=200):
-        corpo = json.dumps(obj).encode()
+        # como o IBGE real: gzip SEMPRE, mesmo sem Accept-Encoding no pedido
+        corpo = gzip.compress(json.dumps(obj).encode())
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Encoding", "gzip")
         self.send_header("Content-Length", str(len(corpo)))
         self.end_headers()
         self.wfile.write(corpo)
@@ -166,6 +171,25 @@ def main():
     rodar(a, url)
     assert CTRL["chamadas"] == 0, "arquivo recente reaproveitado"
     assert not list(tmp.glob("*.tmp"))
+    # ---------- (F) as outras duas leituras do IBGE também descompactam gzip
+    B.IBGE_MUNICIPIOS_URL = url + "/api/v1/localidades/municipios"
+    C.IBGE_MUNICIPIOS_URL = url + "/api/v1/localidades/municipios"
+    with contextlib.redirect_stderr(io.StringIO()) as err:
+        lista = B.carregar_ibge(None)
+        nomes = C.nomes_ibge(None)
+    assert "indisponível" not in err.getvalue(), err.getvalue()
+    assert {m["ibge"] for m in lista} == set(MUN), "ETL do TSE recebe a lista (fallback por nome ativo)"
+    assert next(m for m in lista if m["ibge"] == "5101837")["uf"] == "MT", "município de microrregião nula"
+    assert nomes["2507507"] == "João Pessoa", "consolidador recebe os nomes oficiais com acento"
+    # e a leitura antiga (json.load direto) quebraria com o mesmo erro visto no GitHub
+    import urllib.request
+    with urllib.request.urlopen(url + "/api/v1/localidades/municipios") as r:
+        try:
+            json.load(r)
+            raise AssertionError("o servidor de teste deveria estar respondendo em gzip")
+        except UnicodeDecodeError as e:
+            assert "0x8b" in str(e), e
+
     srv.shutdown()
     print(f"TODOS OS TESTES DO COLETOR PASSARAM (lote: {chamadas_lote} chamadas; sem lote: divisão adaptativa)")
 
