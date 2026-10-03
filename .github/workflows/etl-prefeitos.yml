@@ -92,7 +92,13 @@ jobs:
           set -euo pipefail
           pip install --quiet "pillow>=10"
           python3 tests/test_fotos.py
-          python3 etl/fotos_prefeitos.py
+          # encerra limpo antes do timeout do passo; o que faltar continua na próxima execução
+          python3 etl/fotos_prefeitos.py --paralelo 12 --limite-minutos 24
+
+      - name: Consolidado nacional (todos.json / todos.csv)
+        run: |
+          python3 tests/test_consolidar.py
+          python3 etl/consolidar_prefeitos.py
 
       - name: Guardar auditoria
         if: always()
