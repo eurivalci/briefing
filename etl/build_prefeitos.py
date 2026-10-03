@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import io
 import json
 import re
@@ -46,6 +47,18 @@ CARGO_VICE = 12
 NULOS = {"", "#NULO#", "#NE#", "#NULO", "-1", "-3", "-4"}
 IBGE_MUNICIPIOS_URL = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios"
 DEPARA_PADRAO = Path(__file__).with_name("municipios_brasileiros_tse.csv")
+
+
+def ler_json_http(resp) -> object:
+    """Lê JSON de uma resposta HTTP, descompactando gzip quando vier comprimido.
+
+    A API do IBGE responde SEMPRE em gzip, mesmo sem o cabeçalho Accept-Encoding,
+    e o urllib não descompacta sozinho (o erro aparece como byte 0x8b na posição 1).
+    """
+    bruto = resp.read()
+    if (resp.headers.get("Content-Encoding") or "").lower() == "gzip" or bruto[:2] == b"\x1f\x8b":
+        bruto = gzip.decompress(bruto)
+    return json.loads(bruto.decode("utf-8"))
 
 
 class LayoutError(RuntimeError):
@@ -158,9 +171,10 @@ def carregar_ibge(fonte: str | None) -> list[dict]:
         if fonte and Path(fonte).exists():
             dados = json.loads(Path(fonte).read_text(encoding="utf-8"))
         else:
-            req = urllib.request.Request(IBGE_MUNICIPIOS_URL, headers={"User-Agent": "briefing-municipal-etl"})
+            req = urllib.request.Request(IBGE_MUNICIPIOS_URL, headers={"User-Agent": "briefing-municipal-etl",
+                                                                       "Accept-Encoding": "gzip"})
             with urllib.request.urlopen(req, timeout=60) as resp:
-                dados = json.load(resp)
+                dados = ler_json_http(resp)
     except Exception as exc:  # noqa: BLE001 - fallback é opcional, registramos e seguimos
         print(f"[aviso] lista do IBGE indisponível ({exc}); fallback por nome desativado", file=sys.stderr)
         return []

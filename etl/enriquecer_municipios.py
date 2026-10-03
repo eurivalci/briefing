@@ -21,6 +21,7 @@ Decisões:
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import sys
 import time
@@ -35,7 +36,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 IBGE = "https://servicodados.ibge.gov.br/api/v1"
 WDQS = "https://query.wikidata.org/sparql"
-UA = {"User-Agent": "BriefingMunicipal-ETL/1.0 (EDP Sistemas; dados publicos)"}
+UA = {"User-Agent": "BriefingMunicipal-ETL/1.0 (EDP Sistemas; dados publicos)", "Accept-Encoding": "gzip"}
 VAZIOS = {"", "-", "...", "X", "x", "..", "None", "null"}
 
 # Mesmos indicadores do briefing (index.html). unidade = como o painel do IBGE publica.
@@ -51,6 +52,18 @@ INDICADORES = [
 ]
 
 
+def ler_json_http(resp) -> object:
+    """Lê JSON de uma resposta HTTP, descompactando gzip quando vier comprimido.
+
+    A API do IBGE responde SEMPRE em gzip, mesmo sem o cabeçalho Accept-Encoding,
+    e o urllib não descompacta sozinho (o erro aparece como byte 0x8b na posição 1).
+    """
+    bruto = resp.read()
+    if (resp.headers.get("Content-Encoding") or "").lower() == "gzip" or bruto[:2] == b"\x1f\x8b":
+        bruto = gzip.decompress(bruto)
+    return json.loads(bruto.decode("utf-8"))
+
+
 def sem_acento(s: str) -> str:
     return unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
 
@@ -61,14 +74,14 @@ def get_json(url: str, timeout: int = 60, tentativas: int = 3, dados: bytes | No
         try:
             req = urllib.request.Request(url, data=dados, headers={**UA, **(headers or {})})
             with urllib.request.urlopen(req, timeout=timeout) as r:
-                return json.load(r)
+                return ler_json_http(r)
         except urllib.error.HTTPError as e:
             ultimo = e
             if e.code in (400, 404):      # erro do pedido: repetir não muda nada
                 raise
             espera = int(e.headers.get("Retry-After", "0") or 0) if e.code == 429 else 0
             time.sleep(max(espera, 2 * (i + 1)))
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
             ultimo = e
             time.sleep(2 * (i + 1))
     raise ultimo

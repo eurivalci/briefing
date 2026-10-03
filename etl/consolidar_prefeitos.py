@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import io
 import json
 import sys
@@ -24,6 +25,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 SCHEMA = 1
+IBGE_MUNICIPIOS_URL = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios"
 REGIAO = {
     "AC": "Norte", "AM": "Norte", "AP": "Norte", "PA": "Norte", "RO": "Norte", "RR": "Norte", "TO": "Norte",
     "AL": "Nordeste", "BA": "Nordeste", "CE": "Nordeste", "MA": "Nordeste", "PB": "Nordeste", "PE": "Nordeste",
@@ -55,6 +57,18 @@ CAMPOS_MUNICIPIO = [
 INTEIROS = {"populacao", "populacao_ano", "pib_per_capita_ano", "idhm_ano", "salario_medio_sm_ano",
             "escolarizacao_6_14_ano", "mortalidade_infantil_ano", "prefeito_ibge_ano"}
 PARTICULAS = {"da", "de", "do", "das", "dos", "e"}
+
+
+def ler_json_http(resp) -> object:
+    """Lê JSON de uma resposta HTTP, descompactando gzip quando vier comprimido.
+
+    A API do IBGE responde SEMPRE em gzip, mesmo sem o cabeçalho Accept-Encoding,
+    e o urllib não descompacta sozinho (o erro aparece como byte 0x8b na posição 1).
+    """
+    bruto = resp.read()
+    if (resp.headers.get("Content-Encoding") or "").lower() == "gzip" or bruto[:2] == b"\x1f\x8b":
+        bruto = gzip.decompress(bruto)
+    return json.loads(bruto.decode("utf-8"))
 
 
 def _tokens(s: str | None) -> list[str]:
@@ -127,10 +141,10 @@ def nomes_ibge(fonte: str | None) -> dict[str, str]:
         if fonte and Path(fonte).exists():
             dados = json.loads(Path(fonte).read_text(encoding="utf-8"))
         else:
-            req = urllib.request.Request("https://servicodados.ibge.gov.br/api/v1/localidades/municipios",
-                                         headers={"User-Agent": "briefing-municipal-etl"})
+            req = urllib.request.Request(IBGE_MUNICIPIOS_URL,
+                                         headers={"User-Agent": "briefing-municipal-etl", "Accept-Encoding": "gzip"})
             with urllib.request.urlopen(req, timeout=60) as r:
-                dados = json.load(r)
+                dados = ler_json_http(r)
         return {str(m["id"]): m["nome"] for m in dados}
     except Exception as exc:  # noqa: BLE001 - sem IBGE, usa o nome do TSE em caixa de título
         print(f"[aviso] nomes do IBGE indisponíveis ({exc}); usando nome do TSE", file=sys.stderr)
