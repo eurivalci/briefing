@@ -45,8 +45,10 @@ function wdRows(atual, antigo, extras = {}) {
 }
 
 const atrasos = {};  // url-substring -> ms
+const respostasExtras = {};
 function respostas(url) {
   const u = decodeURIComponent(url);
+  for (const [k, v] of Object.entries(respostasExtras)) if (u.includes(k)) return v;
   if (u.includes("/localidades/estados/CE/municipios")) return [{id: 2303709, nome: "Caucaia"}, {id: 2304400, nome: "Fortaleza"}];
   if (u.includes("/localidades/estados/DF/municipios")) return [{id: 5300108, nome: "Brasília"}];
   if (u.includes("/localidades/municipios/2304400")) return {id: 2304400, nome: "Fortaleza", microrregiao: null,
@@ -158,6 +160,16 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   await esperar(w, () => /Conferindo/.test(d.querySelector("#s-mand").textContent), 2000, "estado intermediário");
   await esperar(w, () => /Consistente/.test(d.querySelector("#s-mand").textContent), 3000, "veredito final");
   delete atrasos["/indicadores/29170/"];
+
+  // ---------- IBGE com prefeito do mandato anterior: desatualizado, não divergente
+  BM().limparCache();
+  respostasExtras["29170/resultados/2304400"] = [{id: 29170, res: [{localidade: "2304400", res: {"2021": "PREFEITO ANTERIOR"}}]}];
+  BM().abrirMunicipio("CE", "2304400");
+  await esperar(w, () => /desatualizado/.test(d.querySelector("#s-mand").textContent), 3000, "IBGE antigo");
+  assert(!/divergem/.test(d.querySelector("#s-mand").textContent), "IBGE antigo não gera alarme de divergência");
+  assert(/Consistente em 3 fontes|Consistente/.test(d.querySelector("#s-mand").textContent) || /Wikidata/.test(d.querySelector("#s-mand").textContent));
+  delete respostasExtras["29170/resultados/2304400"];
+  BM().limparCache();
 
   // ---------- divergência + URL perigosa
   w.location.hash = "#/CE/2303709";

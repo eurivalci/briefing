@@ -36,7 +36,8 @@ def main():
     ibge = [{"id": 2700300, "nome": "Arapiraca"}, {"id": 2304400, "nome": "Fortaleza"}]  # Água Branca ausente: fallback
     (tmp / "ibge.json").write_text(json.dumps(ibge), encoding="utf-8")
 
-    assert C.main(["--prefeitos", str(tmp), "--ibge", str(tmp / "ibge.json"), "--hoje", "2026-10-03"]) == 0
+    assert C.main(["--prefeitos", str(tmp), "--ibge", str(tmp / "ibge.json"), "--hoje", "2026-10-03",
+                   "--municipios", str(tmp / "nao-existe.json")]) == 0
     doc = json.loads((tmp / "todos.json").read_text(encoding="utf-8"))
     assert doc["schema"] == 1 and doc["total"] == 3 and doc["colunas"] == C.COLUNAS
     r = doc["registros"]
@@ -61,6 +62,50 @@ def main():
     assert l_ag[col["suplementar"]] == "sim" and l_ar[col["suplementar"]] == "nao"
     assert linhas[3][col["idade"]] == "" and linhas[3][col["vice"]] == ""
     assert not list(tmp.glob("*.tmp")), "gravação atômica não deixa resto"
+    # ================= com dados do município: uma linha por município + reconciliação
+    t2 = Path(tempfile.mkdtemp())
+    (t2 / "ce.json").write_text(json.dumps({"uf": "CE", "municipios": {
+        "2304400": reg("FORTALEZA", "3", "EVANDRO", "EVANDRO TESTE LEAL", "PT", "1970-03-15"),
+        "2303709": reg("CAUCAIA", "4", "FULANO", "FULANO ORIGINAL SILVA", "PSB", "1980-01-01"),
+    }}), encoding="utf-8")
+    (t2 / "pb.json").write_text(json.dumps({"uf": "PB", "municipios": {
+        "2507507": reg("JOÃO PESSOA", "5", "CÍCERO", "CÍCERO LUCENA FILHO", "PP", "1957-01-01"),
+    }}), encoding="utf-8")
+    base = lambda nome, uf, **k: {"nome": nome, "uf": uf, "regiao_imediata": "Imediata", "regiao_intermediaria": "Inter",  # noqa: E731
+                                  "populacao": 2428708.0, "populacao_ano": "2025", "idhm": 0.754, "idhm_ano": "2010", **k}
+    muns = {"municipios": {
+        "2304400": base("Fortaleza", "CE", prefeito_ibge="EVANDRO TESTE LEAL", prefeito_ibge_ano="2025",
+                        prefeito_wikidata="Evandro Leal", site_oficial="https://www.fortaleza.ce.gov.br/", gentilico="fortalezense"),
+        "2303709": base("Caucaia", "CE", prefeito_ibge="BELTRANO SUBSTITUTO", prefeito_ibge_ano="2025"),
+        "2507507": base("João Pessoa", "PB", prefeito_ibge="LUCIANO CARTAXO", prefeito_ibge_ano="2021"),   # mandato anterior
+        "5300108": base("Brasília", "DF"),
+        "5101837": base("Boa Esperança do Norte", "MT", prefeito_wikidata="Alguém"),                   # sem eleito no TSE
+    }}
+    (t2 / "municipios.json").write_text(json.dumps(muns), encoding="utf-8")
+    assert C.main(["--prefeitos", str(t2), "--municipios", str(t2 / "municipios.json"), "--hoje", "2026-10-03"]) == 0
+    d2 = json.loads((t2 / "todos.json").read_text(encoding="utf-8"))
+    assert d2["total"] == 5 and d2["com_prefeito_tse"] == 3 and d2["dados_municipio"] is True
+    assert d2["colunas"][:len(C.COLUNAS)] == C.COLUNAS and d2["colunas"].index("codigo_tse") < d2["colunas"].index("populacao"), \
+        "colunas novas só ao final (compatível com schema 1)"
+    por = {r["codigo_ibge"]: r for r in d2["registros"]}
+    assert por["2304400"]["situacao_mandato"] == "consistente"
+    assert por["2303709"]["situacao_mandato"] == "divergente"
+    assert por["2507507"]["situacao_mandato"] == "parcial", "IBGE de 2021 é do mandato anterior: não compara"
+    assert por["2507507"]["prefeito_ibge"] == "Luciano Cartaxo" and por["2507507"]["prefeito_ibge_ano"] == 2021, "mas fica na coluna"
+    assert por["5300108"]["situacao_mandato"] == "nao_se_aplica" and por["5300108"]["prefeito"] is None
+    mt = por["5101837"]
+    assert mt["tem_prefeito_tse"] is False and mt["situacao_mandato"] == "parcial" and mt["regiao"] == "Centro-Oeste"
+    assert mt["briefing"] == "index.html#/MT/5101837" and mt["suplementar"] is None
+    f = por["2304400"]
+    assert f["populacao"] == 2428708 and isinstance(f["populacao"], int) and f["populacao_ano"] == 2025, "inteiros como inteiros"
+    assert f["idhm"] == 0.754 and f["gentilico"] == "fortalezense" and f["site_oficial"].endswith(".gov.br/")
+    assert [r["uf"] for r in d2["registros"]] == ["CE", "CE", "DF", "MT", "PB"], "ordem por UF"
+    l2 = list(csv.reader(io.StringIO((t2 / "todos.csv").read_bytes().decode("utf-8-sig")), delimiter=";"))
+    col2 = {c: i for i, c in enumerate(l2[0])}
+    lf = next(l for l in l2 if l[0] == "2304400")
+    assert lf[col2["idhm"]] == "0,754", "IDHM com 3 casas"
+    assert lf[col2["populacao"]] == "2428708" and lf[col2["tem_prefeito_tse"]] == "sim"
+
     print("TODOS OS TESTES DO CONSOLIDADO PASSARAM")
 
 

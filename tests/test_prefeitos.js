@@ -16,6 +16,7 @@ function registro(i, extra = {}) {
     ocupacao: null, eleicao_data: "2024-10-06", eleicao_ano: 2024, turno: 1, suplementar: false, votos: 1000,
     votos_pct: 50 + (i % 40), bens_declarados: i * 1000, vice: null, vice_partido: null, foto: null,
     briefing: `index.html#/CE/${2300000 + i}`, codigo_tse: "1",
+    tem_prefeito_tse: true, populacao: 3000 * i, situacao_mandato: i % 10 ? "consistente" : "divergente", idhm: 0.7123,
   }, extra);
 }
 const ESPECIAIS = [
@@ -25,8 +26,14 @@ const ESPECIAIS = [
   registro(901, {codigo_ibge: "3550308", uf: "SP", regiao: "Sudeste", municipio: "São Paulo", prefeito: "Ricardo",
     partido: "MDB", votos_pct: 59.35, bens_declarados: 1234.5, foto: "javascript:alert(1)"}),
 ];
-const TODOS = {schema: 1, gerado_em: "2026-10-01T06:00:00+00:00", total: 122, registros: [
-  ...Array.from({length: 120}, (_, i) => registro(i + 1)), ...ESPECIAIS]};
+const SEM_PREFEITO = registro(902, {codigo_ibge: "5300108", uf: "DF", regiao: "Centro-Oeste", municipio: "Brasília",
+  prefeito: null, nome_completo: null, partido: null, genero: null, nascimento: null, votos_pct: null, bens_declarados: null,
+  tem_prefeito_tse: false, situacao_mandato: "nao_se_aplica", populacao: 2817068});
+const COLS_PUBLICADAS = ["codigo_ibge","uf","regiao","municipio","prefeito","nome_completo","partido","partido_nome","federacao","genero",
+  "nascimento","idade","instrucao","ocupacao","eleicao_data","eleicao_ano","turno","suplementar","votos","votos_pct","bens_declarados",
+  "vice","vice_partido","foto","briefing","codigo_tse","tem_prefeito_tse","populacao","idhm","situacao_mandato"];
+const TODOS = {schema: 1, gerado_em: "2026-10-01T06:00:00+00:00", total: 123, dados_municipio: true, colunas: COLS_PUBLICADAS, registros: [
+  ...Array.from({length: 120}, (_, i) => registro(i + 1)), ...ESPECIAIS, SEM_PREFEITO]};
 
 function montar(url, respostas) {
   const chamadas = [], erros = [];
@@ -61,7 +68,8 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   let {w, d, chamadas, erros} = montar("http://app.local/prefeitos.html", u => u.includes("todos.json") ? TODOS : null);
   const P = () => w.__PREF__;
   await esperar(() => linhas(d).length === 50, 3000, "primeira página");
-  assert(/122 de 122 prefeitos/.test(txt(d, "#summary")), txt(d, "#summary"));
+  assert(/123 de 123 municípios/.test(txt(d, "#summary")), txt(d, "#summary"));
+  assert(/com dados do município/.test(txt(d, "#summary")));
   assert.strictEqual(chamadas.length, 1, "consolidado carregado em uma requisição");
   assert.strictEqual(linhas(d)[0].cells[0].textContent, "Água Branca", "ordem alfabética ignora acento");
   assert(/página 1 de 3/.test(txt(d, "#pager")));
@@ -75,7 +83,7 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   // filtro por UF via chip
   d.querySelector('.chip[data-uf="SP"]').click();
   assert.strictEqual(linhas(d).length, 1);
-  assert(/1 de 122/.test(txt(d, "#summary")) && /uf=SP/.test(w.location.hash));
+  assert(/1 de 123/.test(txt(d, "#summary")) && /uf=SP/.test(w.location.hash));
   d.querySelector('.chip[data-uf="SP"]').click();
 
   // busca sem acento, com debounce
@@ -113,12 +121,34 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   assert.strictEqual(P().S.filtrados.length, 0);
   assert(/Nenhum prefeito/.test(txt(d, "#tbody")));
   d.querySelector("#b-limpar").click();
-  assert.strictEqual(P().S.filtrados.length, 122, "limpar volta tudo");
+  assert.strictEqual(P().S.filtrados.length, 123, "limpar volta tudo");
   assert.strictEqual(d.querySelector("#f-sup").checked, false);
 
-  // paginação
+  // linha sem prefeito: aparece, explica, não entra na contagem por partido nem no % de prefeitas
+  d.querySelector('.chip[data-uf="DF"]').click();
+  assert.strictEqual(linhas(d).length, 1);
+  assert(/governado pelo governador do DF/.test(txt(d, "#tbody")), "DF explicado");
+  assert(/0 partidos/.test(txt(d, "#summary")) && /0% prefeitas/.test(txt(d, "#summary")));
+  d.querySelector('.chip[data-uf="DF"]').click();
+  // porte e situação do mandato
+  sel("#f-pop", "500000-");
+  assert(P().S.filtrados.every(r => r.populacao >= 500000) && P().S.filtrados.length > 0, "porte");
+  assert(/pop=500000-/.test(w.location.hash));
+  sel("#f-pop", "");
+  const nDiv = P().S.todos.filter(r => r.situacao_mandato === "divergente").length;
+  d.querySelector("#b-div").click();
+  assert.strictEqual(P().S.filtrados.length, nDiv, "atalho de divergentes");
+  assert.strictEqual(d.querySelector("#f-sit").value, "divergente");
+  assert(/fontes divergem/.test(txt(d, "#tbody")));
+  d.querySelector("#b-limpar").click();
+  // ordenar por população
+  d.querySelector('[data-ord="populacao"]').click();
+  assert.strictEqual(P().S.filtrados[0].municipio, "Cidade 001", "população crescente: a menor primeiro (3.000)");
+  assert.strictEqual(P().S.filtrados[P().S.filtrados.length - 1].municipio, "Brasília", "a maior por último");
+  d.querySelector('[data-ord="municipio"]').click();
+
   d.querySelector('[data-pg="1"]').click();
-  assert(/51–100 de 122/.test(txt(d, "#pager")));
+  assert(/51–100 de 123/.test(txt(d, "#pager")));
 
   // exportação CSV: BOM, separador, decimal BR, injeção neutralizada, aspas escapadas, booleano
   const csv = P().gerarCSV(P().S.filtrados);
@@ -129,12 +159,15 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   assert(linhaAgua.includes(";sim;"), "booleano");
   const linhaSP = csv.split("\r\n").find(l => l.startsWith("3550308"));
   assert(linhaSP.includes(";59,35;") && linhaSP.includes(";1234,50;"), "decimal brasileiro");
-  assert.strictEqual(csv.trim().split("\r\n").length, 123, "cabeçalho + 122");
+  assert.strictEqual(csv.trim().split("\r\n").length, 124, "cabeçalho + 123");
   // JSON: só colunas do esquema, sem campos internos
   const js = JSON.parse(P().gerarJSON(P().S.filtrados));
-  assert.strictEqual(js.schema, 1); assert.strictEqual(js.total, 122);
+  assert.strictEqual(js.schema, 1); assert.strictEqual(js.total, 123);
   assert(!("_busca" in js.registros[0]) && !("_mun" in js.registros[0]), "campos internos fora do export");
   assert.deepStrictEqual(Object.keys(js.registros[0]), js.colunas);
+  assert.deepStrictEqual(js.colunas, COLS_PUBLICADAS, "exporta o esquema publicado, com as colunas novas");
+  assert(csv.split("\r\n")[0].endsWith(";populacao;idhm;situacao_mandato"), "CSV com as colunas novas");
+  assert(csv.includes(";0,712;"), "IDHM com 3 casas no CSV");
   assert.deepStrictEqual(erros, [], "sem exceções na página");
   w.close();
 
