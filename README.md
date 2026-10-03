@@ -27,6 +27,7 @@ index.html                       briefing por município (arquivo único)
 prefeitos.html                   listagem nacional: filtros, resumo e exportação
 etl/build_prefeitos.py           TSE → JSON por UF, chave = código IBGE
 etl/fotos_prefeitos.py           fotos oficiais do TSE → WebP 240×300
+etl/enriquecer_municipios.py     IBGE + Wikidata para todos os municípios → data/municipios/municipios.json
 etl/consolidar_prefeitos.py      consolidado nacional → todos.json e todos.csv
 etl/municipios_brasileiros_tse.csv  de-para IBGE↔TSE (5.570 linhas)
 data/prefeitos/<uf>.json         gerado pelo ETL
@@ -76,6 +77,19 @@ https://SEU-SITE.vercel.app/data/prefeitos/todos.json   (≈ 5.570 registros, es
 https://SEU-SITE.vercel.app/data/prefeitos/todos.csv    (separador ;, UTF-8 com BOM, decimal com vírgula)
 https://SEU-SITE.vercel.app/data/prefeitos/<uf>.json    (detalhe completo, com trajetória)
 ```
+
+São **5.571 linhas, uma por município** (Brasília e municípios sem eleito definido incluídos, com as colunas de prefeito vazias e `tem_prefeito_tse = nao`). Além dos dados do prefeito, cada linha traz o que o briefing mostra do município:
+
+| Grupo | Colunas |
+|---|---|
+| Território (IBGE) | `regiao`, `regiao_intermediaria`, `regiao_imediata`, `gentilico` |
+| Indicadores (IBGE, cada um com `_ano`) | `populacao`, `area_km2`, `densidade`, `pib_per_capita`, `idhm`, `salario_medio_sm` (em salários mínimos), `escolarizacao_6_14` (%), `mortalidade_infantil` (por mil nascidos vivos) |
+| Reconciliação | `prefeito_ibge` (+`_ano`), `prefeito_wikidata` (+`_desde`), `situacao_mandato`: consistente, divergente, parcial, sem_dados ou nao_se_aplica |
+| Links | `site_oficial`, `wikidata`, `wikipedia` (só o endereço; o texto é CC BY-SA e não é redistribuído) |
+
+Na reconciliação, um prefeito do IBGE com referência anterior ao mandato vigente (por exemplo, 2021 para o mandato iniciado em 2025) fica na coluna, mas não entra na comparação: é o prefeito anterior, e compará-lo daria falso alarme de divergência. A mesma regra vale no briefing ao vivo.
+
+**No agente analítico offline:** arraste o `todos.json`. O envelope `registros` é reconhecido, os números chegam como números e a coluna `codigo_ibge` (7 dígitos) cruza com a CAPAG e com os municípios embutidos. Prefira o JSON ao CSV para o agente, porque o JSON preserva os tipos.
 
 O esquema é versionado no campo `schema` (hoje 1). Colunas novas entram ao final; renomear ou remover coluna sobe a versão, então quem consome pode travar na versão que conhece. As colunas estão listadas no próprio arquivo, em `colunas`. A idade no arquivo é calculada na data de geração (`idade_referencia`); para a idade de hoje, use `nascimento`.
 

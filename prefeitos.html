@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://servicodados.ibge.gov.br; base-uri 'none'; form-action 'none'">
-<title>Prefeitos do Brasil — Briefing Municipal</title>
+<title>Prefeitos e municípios do Brasil — Briefing Municipal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -100,7 +100,7 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
 </head>
 <body>
 <header class="top">
-  <h1>Prefeitos do Brasil</h1>
+  <h1>Prefeitos e municípios do Brasil</h1>
   <nav><a href="index.html">Briefing por município</a><a href="#api" id="lnk-api">Usar em outro sistema</a></nav>
 </header>
 <div class="layout">
@@ -119,6 +119,12 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
       <input id="f-imin" type="number" min="18" max="110" placeholder="mín." aria-label="Idade mínima">
       <input id="f-imax" type="number" min="18" max="110" placeholder="máx." aria-label="Idade máxima"></div></div>
     <div class="field"><label for="f-pct">Votos válidos a partir de (%)</label><input id="f-pct" type="number" min="0" max="100" step="1" placeholder="0"></div>
+    <div class="field"><label for="f-pop">Porte (população)</label>
+      <select id="f-pop"><option value="">Todos</option><option value="0-5000">Até 5 mil</option><option value="5000-20000">5 a 20 mil</option>
+        <option value="20000-100000">20 a 100 mil</option><option value="100000-500000">100 a 500 mil</option><option value="500000-">Acima de 500 mil</option></select></div>
+    <div class="field"><label for="f-sit">Situação do mandato</label>
+      <select id="f-sit"><option value="">Todas</option><option value="consistente">Consistente</option><option value="divergente">Divergente</option>
+        <option value="parcial">Parcial (uma fonte)</option><option value="sem_dados">Sem dados</option></select></div>
     <label class="check"><input id="f-sup" type="checkbox"> Só eleições suplementares</label>
     <button class="btn" id="b-limpar">Limpar filtros</button>
   </aside>
@@ -192,7 +198,8 @@ async function getJSON(url, timeout = 20000) {
 
 /* ---------------------------------------------------------------- dados */
 const S = {todos: [], filtrados: [], gerado: null, origem: "", pagina: 0, ord: {col: "municipio", dir: 1},
-  f: {q: "", ufs: new Set(), reg: "", pts: new Set(), gen: "", turno: "", imin: "", imax: "", pct: "", sup: false}};
+  colunas: COLUNAS,
+  f: {q: "", ufs: new Set(), reg: "", pts: new Set(), gen: "", turno: "", imin: "", imax: "", pct: "", sup: false, pop: "", sit: ""}};
 
 /** Mesmo mapeamento do etl/consolidar_prefeitos.py, para o fallback por UF. */
 function achatar(doc, nomes) {
@@ -217,7 +224,8 @@ async function carregar() {
   try {
     const d = await getJSON(BASE + "todos.json");
     if (!Array.isArray(d.registros)) throw new Error("formato inesperado");
-    S.todos = d.registros; S.gerado = d.gerado_em; S.origem = "consolidado";
+    S.todos = d.registros; S.gerado = d.gerado_em; S.origem = d.dados_municipio ? "consolidado com dados do município" : "consolidado";
+    if (Array.isArray(d.colunas) && d.colunas.length) S.colunas = d.colunas;   // exporta exatamente o esquema publicado
   } catch {
     // consolidado ainda não gerado: monta a partir dos arquivos por UF
     let nomes = {};
@@ -233,7 +241,7 @@ async function carregar() {
   }
   for (const r of S.todos) {
     r.idade = idade(r.nascimento);  // sempre recalculada na data de hoje
-    r._busca = norm(`${r.municipio} ${r.prefeito} ${r.nome_completo} ${r.vice || ""}`);
+    r._busca = norm([r.municipio, r.prefeito, r.nome_completo, r.vice].filter(Boolean).join(" "));
     r._mun = norm(r.municipio);
   }
 }
@@ -246,18 +254,25 @@ function aplicar() {
     (!q || r._busca.includes(q)) && (!f.ufs.size || f.ufs.has(r.uf)) && (!f.reg || r.regiao === f.reg) &&
     (!f.gen || r.genero === f.gen) && (!f.turno || String(r.turno) === f.turno) && (!f.sup || r.suplementar) &&
     (f.imin === "" && f.imax === "" || (r.idade != null && r.idade >= imin && r.idade <= imax)) &&
-    (f.pct === "" || (r.votos_pct != null && r.votos_pct >= pct)));
+    (f.pct === "" || (r.votos_pct != null && r.votos_pct >= pct)) &&
+    (!f.sit || r.situacao_mandato === f.sit) && dentroPorte(r.populacao, f.pop));
   S.porPartido = contar(base);          // contagem sem o filtro de partido: a lista mostra o que dá para escolher
   S.filtrados = f.pts.size ? base.filter(r => f.pts.has(r.partido || "—")) : base;
   ordenar();
 }
+function dentroPorte(pop, faixa) {
+  if (!faixa) return true;
+  if (pop == null) return false;
+  const [a, b] = faixa.split("-");
+  return pop >= +a && (b === "" || pop < +b);
+}
 function contar(lista) {
   const m = new Map();
-  for (const r of lista) { const k = r.partido || "—"; m.set(k, (m.get(k) || 0) + 1); }
+  for (const r of lista) { if (r.tem_prefeito_tse === false) continue; const k = r.partido || "—"; m.set(k, (m.get(k) || 0) + 1); }
   return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"));
 }
 const CHAVE = {municipio: r => r._mun, uf: r => r.uf, prefeito: r => norm(r.prefeito), partido: r => r.partido || "~",
-  idade: r => r.idade, votos_pct: r => r.votos_pct, bens_declarados: r => r.bens_declarados, eleicao: r => (r.eleicao_data || "") + r.turno};
+  idade: r => r.idade, populacao: r => r.populacao, votos_pct: r => r.votos_pct, bens_declarados: r => r.bens_declarados, eleicao: r => (r.eleicao_data || "") + r.turno};
 function ordenar() {
   const k = CHAVE[S.ord.col], d = S.ord.dir;
   S.filtrados.sort((a, b) => {
@@ -276,7 +291,7 @@ function paraHash() {
   if (f.ufs.size) p.set("uf", [...f.ufs].sort().join(","));
   if (f.reg) p.set("regiao", f.reg);
   if (f.pts.size) p.set("partido", [...f.pts].sort().join(","));
-  for (const k of ["gen", "turno", "imin", "imax", "pct"]) if (f[k] !== "") p.set(k, f[k]);
+  for (const k of ["gen", "turno", "imin", "imax", "pct", "pop", "sit"]) if (f[k] !== "") p.set(k, f[k]);
   if (f.sup) p.set("sup", "1");
   if (S.ord.col !== "municipio" || S.ord.dir !== 1) p.set("ord", `${S.ord.col}:${S.ord.dir > 0 ? "a" : "d"}`);
   const h = p.toString();
@@ -288,7 +303,7 @@ function deHash() {
   f.ufs = new Set((p.get("uf") || "").split(",").filter(u => UFS.includes(u)));
   f.reg = p.get("regiao") || "";
   f.pts = new Set((p.get("partido") || "").split(",").filter(Boolean));
-  for (const k of ["gen", "turno", "imin", "imax", "pct"]) f[k] = p.get(k) || "";
+  for (const k of ["gen", "turno", "imin", "imax", "pct", "pop", "sit"]) f[k] = p.get(k) || "";
   f.sup = p.get("sup") === "1";
   const [c, d] = (p.get("ord") || "").split(":");
   if (CHAVE[c]) S.ord = {col: c, dir: d === "d" ? -1 : 1};
@@ -297,26 +312,30 @@ function sincronizarCampos() {
   const f = S.f;
   $("#f-q").value = f.q; $("#f-reg").value = f.reg; $("#f-gen").value = f.gen; $("#f-turno").value = f.turno;
   $("#f-imin").value = f.imin; $("#f-imax").value = f.imax; $("#f-pct").value = f.pct; $("#f-sup").checked = f.sup;
+  $("#f-pop").value = f.pop; $("#f-sit").value = f.sit;
   document.querySelectorAll("#f-uf .chip").forEach(b => b.setAttribute("aria-pressed", String(f.ufs.has(b.dataset.uf))));
 }
 
 /* ---------------------------------------------------------------- render */
 const COLS = [
   {k: "municipio", t: "Município"}, {k: "uf", t: "UF"}, {k: "prefeito", t: "Prefeito"}, {k: "partido", t: "Partido"},
-  {k: "idade", t: "Idade", num: true, m: true}, {k: "eleicao", t: "Eleição", m: true},
+  {k: "populacao", t: "População", num: true, m: true}, {k: "idade", t: "Idade", num: true, m: true}, {k: "eleicao", t: "Eleição", m: true},
   {k: "votos_pct", t: "Votos válidos", num: true}, {k: "bens_declarados", t: "Bens declarados", num: true, m: true},
 ];
 function render() {
   const n = S.filtrados.length, tot = S.todos.length;
+  const comPref = S.filtrados.filter(r => r.genero).length;
   const mulheres = S.filtrados.filter(r => r.genero === "Feminino").length;
+  const divergentes = S.filtrados.filter(r => r.situacao_mandato === "divergente").length;
   const idades = S.filtrados.map(r => r.idade).filter(x => x != null);
   const media = idades.length ? idades.reduce((a, b) => a + b, 0) / idades.length : null;
   const partidos = new Set(S.filtrados.map(r => r.partido).filter(Boolean)).size;
   $("#summary").innerHTML = `<span class="big">${fmtN(n)}</span>
-    <span class="stat">de ${fmtN(tot)} prefeitos</span>
-    <span class="stat"><b>${n ? fmtN(100 * mulheres / n, 1) : "0"}%</b> mulheres</span>
+    <span class="stat">de ${fmtN(tot)} municípios</span>
+    <span class="stat"><b>${comPref ? fmtN(100 * mulheres / comPref, 1) : "0"}%</b> prefeitas</span>
     <span class="stat">idade média <b>${media != null ? fmtN(media, 0) : "—"}</b></span>
     <span class="stat"><b>${partidos}</b> partidos</span>
+    ${divergentes ? `<button class="stat btn" id="b-div" style="padding:2px 8px">⚠ <b>${fmtN(divergentes)}</b> com fontes divergentes</button>` : ""}
     <span class="stat note">Base de ${S.gerado ? esc(new Date(S.gerado).toLocaleDateString("pt-BR")) : "data desconhecida"} · ${esc(S.origem)}</span>`;
 
   // barras: top 12 partidos no recorte (sem o filtro de partido)
@@ -338,12 +357,13 @@ function render() {
     const thumb = fotoOk(r.foto)
       ? `<img class="thumb" src="${esc(BASE.replace("prefeitos/", "") + r.foto)}" alt="" loading="lazy" decoding="async" data-ini="${esc((r.prefeito || "?").charAt(0))}">`
       : `<span class="thumb" aria-hidden="true">${esc((r.prefeito || "?").charAt(0))}</span>`;
-    const eleicao = `${r.eleicao_data ? esc(r.eleicao_data.slice(0, 4)) : "—"}${r.turno === 2 ? `<span class="tag">2º turno</span>` : ""}${r.suplementar ? `<span class="tag sup">suplementar</span>` : ""}`;
+    const eleicao = `${r.eleicao_data ? esc(String(r.eleicao_data).slice(0, 4)) : "—"}${r.turno === 2 ? `<span class="tag">2º turno</span>` : ""}${r.suplementar ? `<span class="tag sup">suplementar</span>` : ""}`;
     return `<tr>
       <td><a href="${esc(`index.html#/${r.uf}/${r.codigo_ibge}`)}">${esc(r.municipio)}</a></td>
       <td>${esc(r.uf)}</td>
-      <td><div class="who">${thumb}<div>${esc(r.prefeito)}<div class="full">${esc(r.nome_completo)}</div></div></div></td>
+      <td><div class="who">${thumb}<div>${r.prefeito ? esc(r.prefeito) : `<span class="note">${r.uf === "DF" ? "governado pelo governador do DF" : "sem eleito na base do TSE"}</span>`}<div class="full">${esc(r.nome_completo || "")}${r.situacao_mandato === "divergente" ? ` <span class="tag sup" title="IBGE ou Wikidata apontam outra pessoa no cargo">fontes divergem</span>` : ""}</div></div></div></td>
       <td>${r.partido ? `<span class="pt" title="${esc(r.partido_nome || "")}">${esc(r.partido)}</span>` : "—"}</td>
+      <td class="num hide-m">${r.populacao != null ? fmtN(r.populacao) : "—"}</td>
       <td class="num hide-m">${r.idade ?? "—"}</td>
       <td class="hide-m">${eleicao}</td>
       <td class="num">${r.votos_pct != null ? fmtN(r.votos_pct, 1) + "%" : "—"}</td>
@@ -366,27 +386,28 @@ function nomeArquivo(ext) {
   const sufixo = partes.join("_").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
   return `prefeitos${sufixo ? "_" + sufixo : ""}_${new Date().toISOString().slice(0, 10)}.${ext}`;
 }
-const limpo = (r) => Object.fromEntries(COLUNAS.map(c => [c, r[c] ?? null]));
+const limpo = (r) => Object.fromEntries(S.colunas.map(c => [c, r[c] ?? null]));
 function seguroCSV(v) { return typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
-function celula(v) {
+function celula(v, col) {
   if (v == null) return "";
   if (typeof v === "boolean") v = v ? "sim" : "nao";
-  else if (typeof v === "number" && !Number.isInteger(v)) v = v.toFixed(2).replace(".", ",");
+  else if (typeof v === "number" && !Number.isInteger(v)) v = v.toFixed(col === "idhm" ? 3 : 2).replace(".", ",");
   v = String(seguroCSV(v));
   return /[";\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
 }
 function gerarCSV(lista) {
-  return "\ufeff" + [COLUNAS.join(";"), ...lista.map(r => COLUNAS.map(c => celula(r[c])).join(";"))].join("\r\n") + "\r\n";
+  const cols = S.colunas;
+  return "\ufeff" + [cols.join(";"), ...lista.map(r => cols.map(c => celula(r[c], c)).join(";"))].join("\r\n") + "\r\n";
 }
 function gerarJSON(lista) {
   return JSON.stringify({schema: 1, gerado_em: S.gerado, exportado_em: new Date().toISOString(),
-    filtro: location.hash.slice(1) || null, total: lista.length, colunas: COLUNAS, registros: lista.map(limpo)}, null, 1);
+    filtro: location.hash.slice(1) || null, total: lista.length, colunas: S.colunas, registros: lista.map(limpo)}, null, 1);
 }
 function baixar(conteudo, nome, tipo) {
   const url = URL.createObjectURL(new Blob([conteudo], {type: tipo}));
   const a = document.createElement("a"); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
-  toast(`${fmtN(S.filtrados.length)} prefeitos exportados.`);
+  toast(`${fmtN(S.filtrados.length)} municípios exportados.`);
 }
 
 /* ---------------------------------------------------------------- eventos */
@@ -399,7 +420,7 @@ function ligar() {
   });
   let deb;
   $("#f-q").addEventListener("input", e => { clearTimeout(deb); deb = setTimeout(() => { S.f.q = e.target.value; atualizar(); }, 140); });
-  for (const [id, k] of [["#f-reg", "reg"], ["#f-gen", "gen"], ["#f-turno", "turno"], ["#f-imin", "imin"], ["#f-imax", "imax"], ["#f-pct", "pct"]]) {
+  for (const [id, k] of [["#f-reg", "reg"], ["#f-gen", "gen"], ["#f-turno", "turno"], ["#f-imin", "imin"], ["#f-imax", "imax"], ["#f-pct", "pct"], ["#f-pop", "pop"], ["#f-sit", "sit"]]) {
     $(id).addEventListener("change", e => { S.f[k] = e.target.value.trim(); atualizar(); });
   }
   $("#f-sup").addEventListener("change", e => { S.f.sup = e.target.checked; atualizar(); });
@@ -422,7 +443,7 @@ function ligar() {
     S.pagina += +b.dataset.pg; render(); document.querySelector(".tablewrap").scrollIntoView({block: "start"});
   });
   $("#b-limpar").addEventListener("click", () => {
-    S.f = {q: "", ufs: new Set(), reg: "", pts: new Set(), gen: "", turno: "", imin: "", imax: "", pct: "", sup: false};
+    S.f = {q: "", ufs: new Set(), reg: "", pts: new Set(), gen: "", turno: "", imin: "", imax: "", pct: "", sup: false, pop: "", sit: ""};
     sincronizarCampos(); atualizar();
   });
   $("#b-csv").addEventListener("click", () => baixar(gerarCSV(S.filtrados), nomeArquivo("csv"), "text/csv;charset=utf-8"));
@@ -434,6 +455,7 @@ function ligar() {
     const f = $("#filters"), aberto = f.classList.toggle("open"); $("#b-filtros").setAttribute("aria-expanded", String(aberto));
   });
   $("#lnk-api").addEventListener("click", () => { $("#api").open = true; });
+  $("#summary").addEventListener("click", e => { if (e.target.closest("#b-div")) { S.f.sit = "divergente"; sincronizarCampos(); atualizar(); } });
   document.addEventListener("error", e => {   // miniatura quebrada vira inicial (CSP sem onerror inline)
     const img = e.target;
     if (img.tagName === "IMG" && img.classList.contains("thumb")) {

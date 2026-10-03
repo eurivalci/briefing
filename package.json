@@ -4,7 +4,7 @@
   "private": true,
   "description": "Briefing de município e prefeito a partir de IBGE, TSE, Wikidata e Wikipedia — EDP Sistemas",
   "scripts": {
-    "test": "python3 tests/test_etl.py && python3 tests/test_fotos.py && python3 tests/test_consolidar.py && node tests/test_app.js && node tests/test_prefeitos.js",
+    "test": "python3 tests/test_etl.py && python3 tests/test_fotos.py && python3 tests/test_enriquecer.py && python3 tests/test_consolidar.py && node tests/test_app.js && node tests/test_prefeitos.js",
     "test:etl": "python3 tests/test_etl.py",
     "test:app": "node tests/test_app.js",
     "check": "node -e \"const s=require('fs').readFileSync('index.html','utf8');require('fs').writeFileSync('/tmp/bm.js',s.match(/<script>([\\s\\S]*?)<\\/script>/)[1])\" && node --check /tmp/bm.js && node -e \"const s=require('fs').readFileSync('prefeitos.html','utf8');require('fs').writeFileSync('/tmp/pf.js',s.match(/<script>([\\\\s\\\\S]*?)<\\\\/script>/)[1])\" && node --check /tmp/pf.js",

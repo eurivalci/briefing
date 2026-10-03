@@ -507,12 +507,16 @@ function reconciliar() {
     linhas.push({fonte: "TSE", ref: `${e.suplementar ? "Eleição suplementar" : "Eleição"} de ${fmtData(e.data) || e.ano}`,
       nome: p.nome_urna ? `${titulo(p.nome_urna)} (${titulo(p.nome)})` : titulo(p.nome), chaves: [p.nome, p.nome_urna], base: true});
   }
-  if (ibge?.valor) linhas.push({fonte: "IBGE Cidades", ref: `Referência ${ibge.ano}`, nome: titulo(ibge.valor), chaves: [ibge.valor]});
+  // valor do IBGE anterior ao mandato vigente é do prefeito anterior: mostra, mas não compara
+  const inicio = tse?.eleicao?.ano ? (tse.eleicao.suplementar ? +tse.eleicao.ano : +tse.eleicao.ano + 1) : null;
+  const ibgeAntigo = !!(ibge?.valor && inicio && +ibge.ano < inicio);
+  if (ibge?.valor) linhas.push({fonte: "IBGE Cidades", ref: ibgeAntigo ? `Referência ${ibge.ano}, anterior ao mandato atual` : `Referência ${ibge.ano}`,
+    nome: titulo(ibge.valor), chaves: [ibge.valor], antigo: ibgeAntigo});
   if (wd?.nome) linhas.push({fonte: "Wikidata", ref: wd.inicio ? `No cargo desde ${fmtData(wd.inicio)}` : "Sem data de início", nome: wd.nome, chaves: [wd.nome]});
 
   const base = linhas.find(l => l.base) || linhas[0];
   for (const l of linhas) {
-    l.confere = l === base ? null : l.chaves.some(a => base.chaves.some(b => a && b && nomesCompativeis(a, b)));
+    l.confere = (l === base || l.antigo) ? null : l.chaves.some(a => base.chaves.some(b => a && b && nomesCompativeis(a, b)));
   }
   const comparadas = linhas.filter(l => l.confere !== null);
   let nivel, titulo_, texto;
@@ -662,7 +666,7 @@ function rMandato() {
   if (S.uf === "DF") return `<p class="note">Não se aplica.</p>`;
   const r = reconciliar();
   const linhas = r.linhas.map(l => `<tr><td>${esc(l.fonte)}</td><td>${esc(l.nome)}<div class="note">${esc(l.ref)}</div></td>
-    <td>${l.confere === null ? `<span class="tag info">base</span>` : l.confere ? `<span class="tag ok">confere</span>` : `<span class="tag warn">diverge</span>`}</td></tr>`).join("");
+    <td>${l.antigo ? `<span class="tag info">desatualizado</span>` : l.confere === null ? `<span class="tag info">base</span>` : l.confere ? `<span class="tag ok">confere</span>` : `<span class="tag warn">diverge</span>`}</td></tr>`).join("");
   return `<div class="status ${r.nivel}" role="status"><div class="status-top"><span class="dot" aria-hidden="true"></span>
     <div><strong>${esc(r.titulo)}</strong><p>${esc(r.texto)}</p></div></div>
     ${linhas ? `<div class="tablewrap"><table class="src"><thead><tr><th>Fonte</th><th>Quem consta no cargo</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div>` : ""}</div>`;
