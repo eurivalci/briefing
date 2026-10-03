@@ -23,9 +23,11 @@ O TSE não serve dados utilizáveis direto do navegador: são ZIPs de centenas d
 ## Estrutura
 
 ```
-index.html                       aplicação (arquivo único, sem dependências)
+index.html                       briefing por município (arquivo único)
+prefeitos.html                   listagem nacional: filtros, resumo e exportação
 etl/build_prefeitos.py           TSE → JSON por UF, chave = código IBGE
 etl/fotos_prefeitos.py           fotos oficiais do TSE → WebP 240×300
+etl/consolidar_prefeitos.py      consolidado nacional → todos.json e todos.csv
 etl/municipios_brasileiros_tse.csv  de-para IBGE↔TSE (5.570 linhas)
 data/prefeitos/<uf>.json         gerado pelo ETL
 data/prefeitos/_indice.json      cobertura por UF e data de geração
@@ -63,7 +65,28 @@ Depois, faça commit de `data/prefeitos/` e push. O Vercel publica sozinho.
 
 **Sem servidor:** abrindo o `index.html` direto do disco, use "Importar JSON da UF" no painel lateral. IBGE, Wikidata e Wikipedia continuam funcionando.
 
-**Testes:** `npm i && npm test` (ETL, fotos e interface). Para as fotos localmente: `pip install pillow && python3 etl/fotos_prefeitos.py`. Para checar só a sintaxe: `npm run check`.
+**Testes:** `npm i && npm test` (ETL, fotos, consolidado, briefing e listagem). Para as fotos localmente: `pip install pillow && python3 etl/fotos_prefeitos.py`. Para checar só a sintaxe: `npm run check`.
+
+## Uso em outros sistemas
+
+O ETL publica um consolidado nacional em endereço fixo, com CORS liberado:
+
+```
+https://SEU-SITE.vercel.app/data/prefeitos/todos.json   (≈ 5.570 registros, esquema plano)
+https://SEU-SITE.vercel.app/data/prefeitos/todos.csv    (separador ;, UTF-8 com BOM, decimal com vírgula)
+https://SEU-SITE.vercel.app/data/prefeitos/<uf>.json    (detalhe completo, com trajetória)
+```
+
+O esquema é versionado no campo `schema` (hoje 1). Colunas novas entram ao final; renomear ou remover coluna sobe a versão, então quem consome pode travar na versão que conhece. As colunas estão listadas no próprio arquivo, em `colunas`. A idade no arquivo é calculada na data de geração (`idade_referencia`); para a idade de hoje, use `nascimento`.
+
+No Excel ou Power BI: *Dados → Obter dados → Da Web*, com a URL do CSV. Em JavaScript:
+
+```js
+const { registros } = await (await fetch(".../data/prefeitos/todos.json")).json();
+const mulheresNoCeara = registros.filter(p => p.uf === "CE" && p.genero === "Feminino");
+```
+
+A página `prefeitos.html` exporta o recorte filtrado no mesmo esquema, em CSV ou JSON, e o filtro fica no endereço da página para compartilhar. O CSV neutraliza injeção de fórmula (valores iniciados por `=`, `+`, `-` ou `@` ganham um apóstrofo).
 
 ## Decisões de projeto
 

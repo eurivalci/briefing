@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://servicodados.ibge.gov.br; base-uri 'none'; form-action 'none'">
+<title>Prefeitos do Brasil — Briefing Municipal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#10171f; --surface:#17212b; --raise:#1d2935; --line:#2b3947; --line-soft:#223040;
+  --text:#e8e3d8; --muted:#93a1ae; --faint:#66768a; --brass:#c8a35a; --brass-soft:rgba(200,163,90,.16);
+  --ok:#6fb8a6; --warn:#e2826a; --info:#7c93ad;
+  --serif:"Literata", Georgia, serif; --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r-sm:4px; --r-md:8px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{margin:0; background:var(--ink); color:var(--text); font:14px/1.5 var(--sans); -webkit-font-smoothing:antialiased}
+a{color:var(--brass); text-underline-offset:3px}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:var(--r-sm)}
+.sr{position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+.top{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:20px clamp(16px,3vw,32px); border-bottom:1px solid var(--line); background:var(--surface)}
+.top h1{font:700 24px/1.2 var(--serif); margin:0}
+.top nav{display:flex; gap:16px; font-size:14px}
+.layout{display:grid; grid-template-columns:290px minmax(0,1fr); min-height:calc(100vh - 70px)}
+.filters{border-right:1px solid var(--line); padding:18px; display:flex; flex-direction:column; gap:16px; background:var(--surface)}
+.filters h2{font-size:13px; font-weight:600; color:var(--muted); margin:0 0 6px; text-transform:none}
+.field{display:flex; flex-direction:column; gap:5px}
+.field label, .lbl{font-size:13px; color:var(--muted)}
+input[type=search], input[type=number], select{background:var(--ink); border:1px solid var(--line); border-radius:var(--r-md); padding:8px 10px; width:100%}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.ufgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+.chip{border:1px solid var(--line); background:var(--raise); border-radius:var(--r-sm); padding:4px 0; font-size:11px; font-weight:600; color:var(--muted); cursor:pointer}
+.chip[aria-pressed=true]{background:var(--brass); border-color:var(--brass); color:#1a1408}
+.plist{max-height:220px; overflow:auto; border:1px solid var(--line-soft); border-radius:var(--r-md); background:var(--ink)}
+.plist label{display:flex; align-items:center; gap:8px; padding:5px 10px; cursor:pointer; font-size:13px; border-bottom:1px solid var(--line-soft)}
+.plist label:last-child{border-bottom:0}
+.plist .n{margin-left:auto; color:var(--faint); font-variant-numeric:tabular-nums}
+.check{display:flex; gap:8px; align-items:center; font-size:13px; cursor:pointer}
+.btn{background:var(--raise); border:1px solid var(--line); border-radius:var(--r-md); padding:7px 12px; cursor:pointer; font-size:13px; font-weight:500}
+.btn:hover{border-color:var(--brass)}
+.btn.primary{background:var(--brass); border-color:var(--brass); color:#1a1408}
+
+main{padding:18px clamp(16px,3vw,32px) 60px; min-width:0}
+.summary{display:flex; flex-wrap:wrap; gap:8px 28px; align-items:baseline; margin-bottom:14px}
+.summary .big{font:700 30px/1 var(--serif); font-variant-numeric:tabular-nums}
+.summary .stat{color:var(--muted)}
+.summary .stat b{color:var(--text); font-weight:600; font-variant-numeric:tabular-nums}
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 16px}
+.bars{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:4px 22px; margin:0 0 18px}
+.bar{display:grid; grid-template-columns:104px 1fr 46px; gap:8px; align-items:center; background:none; border:0; padding:3px 0; cursor:pointer; text-align:left}
+.bar .sg{font-weight:600; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar .tr{display:block; height:8px; background:var(--line-soft); border-radius:4px; overflow:hidden}
+.bar .fl{display:block; height:100%; background:var(--brass); border-radius:4px}
+.bar .ct{font-size:12px; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+.bar[aria-pressed=true] .sg{color:var(--brass)}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-md)}
+table{width:100%; border-collapse:collapse; font-size:13.5px}
+th,td{padding:8px 12px; text-align:left; border-bottom:1px solid var(--line-soft); vertical-align:middle; white-space:nowrap}
+th{position:sticky; top:0; background:var(--surface); z-index:1}
+th button{background:none; border:0; padding:0; font-weight:600; color:var(--muted); cursor:pointer; font-size:12.5px}
+th[aria-sort=ascending] button::after{content:" ↑"; color:var(--brass)}
+th[aria-sort=descending] button::after{content:" ↓"; color:var(--brass)}
+tbody tr:hover{background:var(--raise)}
+td.num{text-align:right; font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+.who{display:flex; align-items:center; gap:10px}
+.thumb{width:32px; height:40px; border-radius:var(--r-sm); object-fit:cover; background:var(--raise); border:1px solid var(--line); display:grid; place-items:center; font:600 12px var(--serif); color:var(--brass); flex:none}
+.who .full{color:var(--faint); font-size:12px}
+.pt{display:inline-block; border:1px solid var(--brass); color:var(--brass); border-radius:var(--r-sm); padding:0 5px; font-weight:600; font-size:12px}
+.tag{display:inline-block; font-size:11px; padding:0 6px; border-radius:var(--r-sm); background:rgba(124,147,173,.16); color:var(--info); margin-left:4px}
+.tag.sup{background:rgba(226,130,106,.15); color:var(--warn)}
+.pager{display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:12px; color:var(--muted)}
+.empty,.loading{padding:40px; text-align:center; color:var(--muted)}
+details.api{margin-top:26px; border:1px solid var(--line); border-radius:var(--r-md); padding:12px 16px; background:var(--surface)}
+details.api summary{cursor:pointer; font-weight:600}
+details.api code, details.api pre{font:12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace}
+details.api pre{background:var(--ink); border:1px solid var(--line-soft); border-radius:var(--r-md); padding:10px 12px; overflow-x:auto}
+.note{color:var(--muted); font-size:12.5px}
+.toast{position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%); background:var(--raise); border:1px solid var(--brass); padding:9px 16px; border-radius:var(--r-md); opacity:0; pointer-events:none; transition:opacity .2s}
+.toast.show{opacity:1}
+.filters-toggle{display:none}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .filters{border-right:0; border-bottom:1px solid var(--line); display:none}
+  .filters.open{display:flex}
+  .filters-toggle{display:inline-block}
+  th.hide-m, td.hide-m{display:none}
+  .bar:nth-child(n+7){display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Prefeitos do Brasil</h1>
+  <nav><a href="index.html">Briefing por município</a><a href="#api" id="lnk-api">Usar em outro sistema</a></nav>
+</header>
+<div class="layout">
+  <aside class="filters" id="filters" aria-label="Filtros">
+    <div class="field"><label for="f-q">Buscar</label>
+      <input id="f-q" type="search" placeholder="Município, prefeito ou vice" autocomplete="off"></div>
+    <div><p class="lbl" id="l-uf" style="margin:0 0 5px">Estados</p><div class="ufgrid" id="f-uf" role="group" aria-labelledby="l-uf"></div></div>
+    <div class="field"><label for="f-reg">Região</label>
+      <select id="f-reg"><option value="">Todas</option><option>Norte</option><option>Nordeste</option><option>Centro-Oeste</option><option>Sudeste</option><option>Sul</option></select></div>
+    <div><p class="lbl" style="margin:0 0 5px">Partidos</p><div class="plist" id="f-pt"></div></div>
+    <div class="row2">
+      <div class="field"><label for="f-gen">Gênero</label><select id="f-gen"><option value="">Todos</option><option>Feminino</option><option>Masculino</option></select></div>
+      <div class="field"><label for="f-turno">Turno</label><select id="f-turno"><option value="">Todos</option><option value="1">1º turno</option><option value="2">2º turno</option></select></div>
+    </div>
+    <div><p class="lbl" style="margin:0 0 5px">Idade</p><div class="row2">
+      <input id="f-imin" type="number" min="18" max="110" placeholder="mín." aria-label="Idade mínima">
+      <input id="f-imax" type="number" min="18" max="110" placeholder="máx." aria-label="Idade máxima"></div></div>
+    <div class="field"><label for="f-pct">Votos válidos a partir de (%)</label><input id="f-pct" type="number" min="0" max="100" step="1" placeholder="0"></div>
+    <label class="check"><input id="f-sup" type="checkbox"> Só eleições suplementares</label>
+    <button class="btn" id="b-limpar">Limpar filtros</button>
+  </aside>
+
+  <main>
+    <button class="btn filters-toggle" id="b-filtros" aria-controls="filters" aria-expanded="false" style="margin-bottom:12px">Filtros</button>
+    <div class="summary" id="summary" aria-live="polite"><span class="loading">Carregando prefeitos…</span></div>
+    <div class="actions">
+      <button class="btn primary" id="b-csv">Exportar CSV</button>
+      <button class="btn" id="b-json">Exportar JSON</button>
+      <button class="btn" id="b-link">Copiar link deste filtro</button>
+    </div>
+    <div class="bars" id="bars" aria-label="Prefeitos por partido"></div>
+    <div class="tablewrap"><table>
+      <thead><tr id="thead"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <div class="pager" id="pager"></div>
+
+    <details class="api" id="api">
+      <summary>Usar em outro sistema</summary>
+      <p class="note">Estes arquivos são públicos, atualizados toda semana pelo ETL e liberados para leitura de qualquer origem (CORS). O esquema é versionado no campo <code>schema</code>: colunas novas entram ao final, e mudança incompatível sobe a versão.</p>
+      <pre id="api-urls"></pre>
+      <p class="note">Exemplo em JavaScript:</p>
+      <pre id="api-js"></pre>
+      <p class="note">No Excel ou Power BI: Dados → Obter dados → Da Web, com a URL do CSV (separador ponto e vírgula, UTF-8).</p>
+    </details>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+(function () {
+const UFS = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
+const REGIAO = {AC:"Norte",AM:"Norte",AP:"Norte",PA:"Norte",RO:"Norte",RR:"Norte",TO:"Norte",AL:"Nordeste",BA:"Nordeste",CE:"Nordeste",MA:"Nordeste",PB:"Nordeste",PE:"Nordeste",PI:"Nordeste",RN:"Nordeste",SE:"Nordeste",DF:"Centro-Oeste",GO:"Centro-Oeste",MS:"Centro-Oeste",MT:"Centro-Oeste",ES:"Sudeste",MG:"Sudeste",RJ:"Sudeste",SP:"Sudeste",PR:"Sul",RS:"Sul",SC:"Sul"};
+const COLUNAS = ["codigo_ibge","uf","regiao","municipio","prefeito","nome_completo","partido","partido_nome","federacao","genero","nascimento","idade","instrucao","ocupacao","eleicao_data","eleicao_ano","turno","suplementar","votos","votos_pct","bens_declarados","vice","vice_partido","foto","briefing","codigo_tse"];
+const BASE = "./data/prefeitos/";
+const POR_PAGINA = 50;
+
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const semAcento = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const norm = (s) => semAcento(s).toLowerCase();
+const PART = new Set(["da","de","do","das","dos","e"]);
+const titulo = (s) => String(s || "").toLowerCase().split(/\s+/).filter(Boolean)
+  .map((w, i) => i && PART.has(w) ? w : w.split("-").map(p => p.charAt(0).toUpperCase() + p.slice(1)).join("-")).join(" ");
+const fmtN = (n, d = 0) => Number(n).toLocaleString("pt-BR", {minimumFractionDigits: d, maximumFractionDigits: d});
+const fmtBRL = (n) => Number(n).toLocaleString("pt-BR", {style: "currency", currency: "BRL", maximumFractionDigits: 0});
+function idade(iso) {
+  if (!iso) return null;
+  const n = new Date(iso + "T00:00:00"), h = new Date();
+  if (isNaN(n)) return null;
+  let a = h.getFullYear() - n.getFullYear();
+  if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
+  return a;
+}
+const fotoOk = (f) => typeof f === "string" && /^fotos\/\d{7}\.webp(\?v=\d{1,20})?$/.test(f);
+function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2400); }
+
+async function getJSON(url, timeout = 20000) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const r = await fetch(url, {signal: ctl.signal});
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const ct = (r.headers && r.headers.get && r.headers.get("content-type")) || "";
+    if (ct && !/json/i.test(ct)) throw new Error("resposta não é JSON");
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+/* ---------------------------------------------------------------- dados */
+const S = {todos: [], filtrados: [], gerado: null, origem: "", pagina: 0, ord: {col: "municipio", dir: 1},
+  f: {q: "", ufs: new Set(), reg: "", pts: new Set(), gen: "", turno: "", imin: "", imax: "", pct: "", sup: false}};
+
+/** Mesmo mapeamento do etl/consolidar_prefeitos.py, para o fallback por UF. */
+function achatar(doc, nomes) {
+  const uf = doc.uf, out = [];
+  for (const [ibge, reg] of Object.entries(doc.municipios || {})) {
+    const p = reg.prefeito || {}, e = reg.eleicao || {}, v = reg.vice || {};
+    out.push({
+      codigo_ibge: ibge, uf, regiao: REGIAO[uf] || "", municipio: nomes[ibge] || titulo(reg.tse?.nm_ue),
+      prefeito: titulo(p.nome_urna || p.nome), nome_completo: titulo(p.nome), partido: p.partido || null,
+      partido_nome: titulo(p.partido_nome) || null, federacao: p.federacao || null, genero: titulo(p.genero) || null,
+      nascimento: p.nascimento || null, idade: null, instrucao: titulo(p.instrucao) || null, ocupacao: titulo(p.ocupacao) || null,
+      eleicao_data: e.data || null, eleicao_ano: e.ano || null, turno: e.turno || null, suplementar: !!e.suplementar,
+      votos: p.votos ?? null, votos_pct: p.votos_pct ?? null, bens_declarados: p.bens_total ?? null,
+      vice: titulo(v.nome_urna || v.nome) || null, vice_partido: v.partido || null, foto: p.foto || null,
+      briefing: `index.html#/${uf}/${ibge}`, codigo_tse: reg.tse?.sg_ue || null,
+    });
+  }
+  return out;
+}
+
+async function carregar() {
+  try {
+    const d = await getJSON(BASE + "todos.json");
+    if (!Array.isArray(d.registros)) throw new Error("formato inesperado");
+    S.todos = d.registros; S.gerado = d.gerado_em; S.origem = "consolidado";
+  } catch {
+    // consolidado ainda não gerado: monta a partir dos arquivos por UF
+    let nomes = {};
+    const [ibge, ...ufs] = await Promise.allSettled([
+      getJSON("https://servicodados.ibge.gov.br/api/v1/localidades/municipios"),
+      ...UFS.filter(u => u !== "DF").map(u => getJSON(`${BASE}${u.toLowerCase()}.json`)),
+    ]);
+    if (ibge.status === "fulfilled") for (const m of ibge.value) nomes[String(m.id)] = m.nome;
+    const docs = ufs.filter(r => r.status === "fulfilled").map(r => r.value);
+    if (!docs.length) throw new Error("nenhum arquivo de prefeitos encontrado em " + BASE);
+    S.todos = docs.flatMap(d => achatar(d, nomes));
+    S.gerado = docs.map(d => d.gerado_em).filter(Boolean).sort().pop() || null; S.origem = `${docs.length} arquivos por UF`;
+  }
+  for (const r of S.todos) {
+    r.idade = idade(r.nascimento);  // sempre recalculada na data de hoje
+    r._busca = norm(`${r.municipio} ${r.prefeito} ${r.nome_completo} ${r.vice || ""}`);
+    r._mun = norm(r.municipio);
+  }
+}
+
+/* ---------------------------------------------------------------- filtros */
+function aplicar() {
+  const f = S.f, q = norm(f.q).trim();
+  const imin = f.imin === "" ? -Infinity : +f.imin, imax = f.imax === "" ? Infinity : +f.imax, pct = f.pct === "" ? -Infinity : +f.pct;
+  const base = S.todos.filter(r =>
+    (!q || r._busca.includes(q)) && (!f.ufs.size || f.ufs.has(r.uf)) && (!f.reg || r.regiao === f.reg) &&
+    (!f.gen || r.genero === f.gen) && (!f.turno || String(r.turno) === f.turno) && (!f.sup || r.suplementar) &&
+    (f.imin === "" && f.imax === "" || (r.idade != null && r.idade >= imin && r.idade <= imax)) &&
+    (f.pct === "" || (r.votos_pct != null && r.votos_pct >= pct)));
+  S.porPartido = contar(base);          // contagem sem o filtro de partido: a lista mostra o que dá para escolher
+  S.filtrados = f.pts.size ? base.filter(r => f.pts.has(r.partido || "—")) : base;
+  ordenar();
+}
+function contar(lista) {
+  const m = new Map();
+  for (const r of lista) { const k = r.partido || "—"; m.set(k, (m.get(k) || 0) + 1); }
+  return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"));
+}
+const CHAVE = {municipio: r => r._mun, uf: r => r.uf, prefeito: r => norm(r.prefeito), partido: r => r.partido || "~",
+  idade: r => r.idade, votos_pct: r => r.votos_pct, bens_declarados: r => r.bens_declarados, eleicao: r => (r.eleicao_data || "") + r.turno};
+function ordenar() {
+  const k = CHAVE[S.ord.col], d = S.ord.dir;
+  S.filtrados.sort((a, b) => {
+    const x = k(a), y = k(b);
+    if (x == null && y == null) return a._mun.localeCompare(b._mun);
+    if (x == null) return 1;           // vazios sempre no fim, em qualquer direção
+    if (y == null) return -1;
+    return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), "pt-BR")) * d || a._mun.localeCompare(b._mun);
+  });
+}
+
+/* ---------------------------------------------------------------- estado na URL */
+function paraHash() {
+  const f = S.f, p = new URLSearchParams();
+  if (f.q) p.set("q", f.q);
+  if (f.ufs.size) p.set("uf", [...f.ufs].sort().join(","));
+  if (f.reg) p.set("regiao", f.reg);
+  if (f.pts.size) p.set("partido", [...f.pts].sort().join(","));
+  for (const k of ["gen", "turno", "imin", "imax", "pct"]) if (f[k] !== "") p.set(k, f[k]);
+  if (f.sup) p.set("sup", "1");
+  if (S.ord.col !== "municipio" || S.ord.dir !== 1) p.set("ord", `${S.ord.col}:${S.ord.dir > 0 ? "a" : "d"}`);
+  const h = p.toString();
+  history.replaceState(null, "", h ? "#" + h : location.pathname + location.search);
+}
+function deHash() {
+  const p = new URLSearchParams(location.hash.slice(1)), f = S.f;
+  f.q = p.get("q") || "";
+  f.ufs = new Set((p.get("uf") || "").split(",").filter(u => UFS.includes(u)));
+  f.reg = p.get("regiao") || "";
+  f.pts = new Set((p.get("partido") || "").split(",").filter(Boolean));
+  for (const k of ["gen", "turno", "imin", "imax", "pct"]) f[k] = p.get(k) || "";
+  f.sup = p.get("sup") === "1";
+  const [c, d] = (p.get("ord") || "").split(":");
+  if (CHAVE[c]) S.ord = {col: c, dir: d === "d" ? -1 : 1};
+}
+function sincronizarCampos() {
+  const f = S.f;
+  $("#f-q").value = f.q; $("#f-reg").value = f.reg; $("#f-gen").value = f.gen; $("#f-turno").value = f.turno;
+  $("#f-imin").value = f.imin; $("#f-imax").value = f.imax; $("#f-pct").value = f.pct; $("#f-sup").checked = f.sup;
+  document.querySelectorAll("#f-uf .chip").forEach(b => b.setAttribute("aria-pressed", String(f.ufs.has(b.dataset.uf))));
+}
+
+/* ---------------------------------------------------------------- render */
+const COLS = [
+  {k: "municipio", t: "Município"}, {k: "uf", t: "UF"}, {k: "prefeito", t: "Prefeito"}, {k: "partido", t: "Partido"},
+  {k: "idade", t: "Idade", num: true, m: true}, {k: "eleicao", t: "Eleição", m: true},
+  {k: "votos_pct", t: "Votos válidos", num: true}, {k: "bens_declarados", t: "Bens declarados", num: true, m: true},
+];
+function render() {
+  const n = S.filtrados.length, tot = S.todos.length;
+  const mulheres = S.filtrados.filter(r => r.genero === "Feminino").length;
+  const idades = S.filtrados.map(r => r.idade).filter(x => x != null);
+  const media = idades.length ? idades.reduce((a, b) => a + b, 0) / idades.length : null;
+  const partidos = new Set(S.filtrados.map(r => r.partido).filter(Boolean)).size;
+  $("#summary").innerHTML = `<span class="big">${fmtN(n)}</span>
+    <span class="stat">de ${fmtN(tot)} prefeitos</span>
+    <span class="stat"><b>${n ? fmtN(100 * mulheres / n, 1) : "0"}%</b> mulheres</span>
+    <span class="stat">idade média <b>${media != null ? fmtN(media, 0) : "—"}</b></span>
+    <span class="stat"><b>${partidos}</b> partidos</span>
+    <span class="stat note">Base de ${S.gerado ? esc(new Date(S.gerado).toLocaleDateString("pt-BR")) : "data desconhecida"} · ${esc(S.origem)}</span>`;
+
+  // barras: top 12 partidos no recorte (sem o filtro de partido)
+  const top = S.porPartido.slice(0, 12), max = top[0]?.[1] || 1;
+  $("#bars").innerHTML = top.map(([pt, c]) => `<button class="bar" data-pt="${esc(pt)}" aria-pressed="${S.f.pts.has(pt)}" title="Filtrar ${esc(pt)}">
+    <span class="sg">${esc(pt)}</span><span class="tr"><span class="fl" style="width:${(100 * c / max).toFixed(1)}%"></span></span><span class="ct">${fmtN(c)}</span></button>`).join("");
+
+  // lista de partidos com contagem
+  $("#f-pt").innerHTML = S.porPartido.map(([pt, c]) => `<label><input type="checkbox" value="${esc(pt)}" ${S.f.pts.has(pt) ? "checked" : ""}>
+    ${esc(pt)}<span class="n">${fmtN(c)}</span></label>`).join("") || `<p class="note" style="padding:8px 10px;margin:0">Nenhum partido no recorte.</p>`;
+
+  $("#thead").innerHTML = COLS.map(c => `<th class="${c.num ? "num" : ""} ${c.m ? "hide-m" : ""}" ${S.ord.col === c.k ? `aria-sort="${S.ord.dir > 0 ? "ascending" : "descending"}"` : ""}>
+    <button data-ord="${c.k}">${esc(c.t)}</button></th>`).join("");
+
+  const paginas = Math.max(1, Math.ceil(n / POR_PAGINA));
+  S.pagina = Math.min(S.pagina, paginas - 1);
+  const ini = S.pagina * POR_PAGINA, fatia = S.filtrados.slice(ini, ini + POR_PAGINA);
+  $("#tbody").innerHTML = fatia.length ? fatia.map(r => {
+    const thumb = fotoOk(r.foto)
+      ? `<img class="thumb" src="${esc(BASE.replace("prefeitos/", "") + r.foto)}" alt="" loading="lazy" decoding="async" data-ini="${esc((r.prefeito || "?").charAt(0))}">`
+      : `<span class="thumb" aria-hidden="true">${esc((r.prefeito || "?").charAt(0))}</span>`;
+    const eleicao = `${r.eleicao_data ? esc(r.eleicao_data.slice(0, 4)) : "—"}${r.turno === 2 ? `<span class="tag">2º turno</span>` : ""}${r.suplementar ? `<span class="tag sup">suplementar</span>` : ""}`;
+    return `<tr>
+      <td><a href="${esc(`index.html#/${r.uf}/${r.codigo_ibge}`)}">${esc(r.municipio)}</a></td>
+      <td>${esc(r.uf)}</td>
+      <td><div class="who">${thumb}<div>${esc(r.prefeito)}<div class="full">${esc(r.nome_completo)}</div></div></div></td>
+      <td>${r.partido ? `<span class="pt" title="${esc(r.partido_nome || "")}">${esc(r.partido)}</span>` : "—"}</td>
+      <td class="num hide-m">${r.idade ?? "—"}</td>
+      <td class="hide-m">${eleicao}</td>
+      <td class="num">${r.votos_pct != null ? fmtN(r.votos_pct, 1) + "%" : "—"}</td>
+      <td class="num hide-m">${r.bens_declarados != null ? fmtBRL(r.bens_declarados) : "—"}</td></tr>`;
+  }).join("") : `<tr><td colspan="${COLS.length}" class="empty">Nenhum prefeito com esses filtros.</td></tr>`;
+
+  $("#pager").innerHTML = n ? `<span>${fmtN(ini + 1)}–${fmtN(Math.min(ini + POR_PAGINA, n))} de ${fmtN(n)}</span>
+    <span><button class="btn" data-pg="-1" ${S.pagina === 0 ? "disabled" : ""}>Anterior</button>
+    <span style="margin:0 8px">página ${S.pagina + 1} de ${paginas}</span>
+    <button class="btn" data-pg="1" ${S.pagina >= paginas - 1 ? "disabled" : ""}>Próxima</button></span>` : "";
+}
+function atualizar(resetPagina = true) { if (resetPagina) S.pagina = 0; aplicar(); paraHash(); render(); }
+
+/* ---------------------------------------------------------------- exportação */
+function nomeArquivo(ext) {
+  const f = S.f, partes = [];
+  if (f.ufs.size) partes.push([...f.ufs].sort().join("-"));
+  if (f.pts.size) partes.push([...f.pts].sort().join("-"));
+  if (f.reg) partes.push(norm(f.reg).replace(/\W+/g, "-"));
+  const sufixo = partes.join("_").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
+  return `prefeitos${sufixo ? "_" + sufixo : ""}_${new Date().toISOString().slice(0, 10)}.${ext}`;
+}
+const limpo = (r) => Object.fromEntries(COLUNAS.map(c => [c, r[c] ?? null]));
+function seguroCSV(v) { return typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
+function celula(v) {
+  if (v == null) return "";
+  if (typeof v === "boolean") v = v ? "sim" : "nao";
+  else if (typeof v === "number" && !Number.isInteger(v)) v = v.toFixed(2).replace(".", ",");
+  v = String(seguroCSV(v));
+  return /[";\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+function gerarCSV(lista) {
+  return "\ufeff" + [COLUNAS.join(";"), ...lista.map(r => COLUNAS.map(c => celula(r[c])).join(";"))].join("\r\n") + "\r\n";
+}
+function gerarJSON(lista) {
+  return JSON.stringify({schema: 1, gerado_em: S.gerado, exportado_em: new Date().toISOString(),
+    filtro: location.hash.slice(1) || null, total: lista.length, colunas: COLUNAS, registros: lista.map(limpo)}, null, 1);
+}
+function baixar(conteudo, nome, tipo) {
+  const url = URL.createObjectURL(new Blob([conteudo], {type: tipo}));
+  const a = document.createElement("a"); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast(`${fmtN(S.filtrados.length)} prefeitos exportados.`);
+}
+
+/* ---------------------------------------------------------------- eventos */
+function ligar() {
+  $("#f-uf").innerHTML = UFS.map(u => `<button class="chip" data-uf="${u}" aria-pressed="false">${u}</button>`).join("");
+  $("#f-uf").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    const u = b.dataset.uf; S.f.ufs.has(u) ? S.f.ufs.delete(u) : S.f.ufs.add(u);
+    b.setAttribute("aria-pressed", String(S.f.ufs.has(u))); atualizar();
+  });
+  let deb;
+  $("#f-q").addEventListener("input", e => { clearTimeout(deb); deb = setTimeout(() => { S.f.q = e.target.value; atualizar(); }, 140); });
+  for (const [id, k] of [["#f-reg", "reg"], ["#f-gen", "gen"], ["#f-turno", "turno"], ["#f-imin", "imin"], ["#f-imax", "imax"], ["#f-pct", "pct"]]) {
+    $(id).addEventListener("change", e => { S.f[k] = e.target.value.trim(); atualizar(); });
+  }
+  $("#f-sup").addEventListener("change", e => { S.f.sup = e.target.checked; atualizar(); });
+  $("#f-pt").addEventListener("change", e => {
+    if (e.target.type !== "checkbox") return;
+    e.target.checked ? S.f.pts.add(e.target.value) : S.f.pts.delete(e.target.value); atualizar();
+  });
+  $("#bars").addEventListener("click", e => {
+    const b = e.target.closest(".bar"); if (!b) return;
+    const p = b.dataset.pt; S.f.pts.has(p) ? S.f.pts.delete(p) : S.f.pts.add(p); atualizar();
+  });
+  $("#thead").addEventListener("click", e => {
+    const b = e.target.closest("[data-ord]"); if (!b) return;
+    const c = b.dataset.ord;
+    S.ord = S.ord.col === c ? {col: c, dir: -S.ord.dir} : {col: c, dir: ["votos_pct", "bens_declarados"].includes(c) ? -1 : 1};
+    ordenar(); paraHash(); render();
+  });
+  $("#pager").addEventListener("click", e => {
+    const b = e.target.closest("[data-pg]"); if (!b) return;
+    S.pagina += +b.dataset.pg; render(); document.querySelector(".tablewrap").scrollIntoView({block: "start"});
+  });
+  $("#b-limpar").addEventListener("click", () => {
+    S.f = {q: "", ufs: new Set(), reg: "", pts: new Set(), gen: "", turno: "", imin: "", imax: "", pct: "", sup: false};
+    sincronizarCampos(); atualizar();
+  });
+  $("#b-csv").addEventListener("click", () => baixar(gerarCSV(S.filtrados), nomeArquivo("csv"), "text/csv;charset=utf-8"));
+  $("#b-json").addEventListener("click", () => baixar(gerarJSON(S.filtrados), nomeArquivo("json"), "application/json"));
+  $("#b-link").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(location.href); toast("Link copiado."); } catch { toast("Copie o endereço da barra do navegador."); }
+  });
+  $("#b-filtros").addEventListener("click", () => {
+    const f = $("#filters"), aberto = f.classList.toggle("open"); $("#b-filtros").setAttribute("aria-expanded", String(aberto));
+  });
+  $("#lnk-api").addEventListener("click", () => { $("#api").open = true; });
+  document.addEventListener("error", e => {   // miniatura quebrada vira inicial (CSP sem onerror inline)
+    const img = e.target;
+    if (img.tagName === "IMG" && img.classList.contains("thumb")) {
+      const s = document.createElement("span"); s.className = "thumb"; s.textContent = img.dataset.ini || "?"; img.replaceWith(s);
+    }
+  }, true);
+  window.addEventListener("hashchange", () => { deHash(); sincronizarCampos(); aplicar(); render(); });
+
+  const raiz = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
+  $("#api-urls").textContent = `${raiz}data/prefeitos/todos.json\n${raiz}data/prefeitos/todos.csv\n${raiz}data/prefeitos/<uf>.json   (detalhe completo, ex.: ce.json)`;
+  $("#api-js").textContent = `const r = await fetch("${raiz}data/prefeitos/todos.json");\nconst { registros } = await r.json();\nconst doCeara = registros.filter(p => p.uf === "CE");`;
+}
+
+window.__PREF__ = {S, gerarCSV, gerarJSON, celula, achatar, aplicar, render};
+
+(async () => {
+  ligar(); deHash(); sincronizarCampos();
+  try { await carregar(); aplicar(); render(); }
+  catch (e) { $("#summary").innerHTML = `<span class="empty">Não foi possível carregar os prefeitos: ${esc(e.message)}</span>`; }
+})();
+})();
+</script>
+</body>
+</html>

@@ -3,6 +3,36 @@
   "cleanUrls": false,
   "headers": [
     {
+      "source": "/data/prefeitos/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, HEAD, OPTIONS"
+        }
+      ]
+    },
+    {
+      "source": "/data/prefeitos/todos.csv",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/csv; charset=utf-8"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "inline; filename=\"prefeitos-brasil.csv\""
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
       "source": "/data/prefeitos/(.*)\\.json",
       "headers": [
         {
