@@ -37,8 +37,71 @@ COLUNAS = [
     "federacao", "genero", "nascimento", "idade", "instrucao", "ocupacao", "eleicao_data", "eleicao_ano",
     "turno", "suplementar", "votos", "votos_pct", "bens_declarados", "vice", "vice_partido",
     "foto", "briefing", "codigo_tse",
+    # schema 1, acréscimo compatível (out/2026): dados do município e reconciliação do mandato
+    "tem_prefeito_tse", "regiao_intermediaria", "regiao_imediata", "gentilico",
+    "populacao", "populacao_ano", "area_km2", "densidade", "pib_per_capita", "pib_per_capita_ano",
+    "idhm", "idhm_ano", "salario_medio_sm", "salario_medio_sm_ano", "escolarizacao_6_14", "escolarizacao_6_14_ano",
+    "mortalidade_infantil", "mortalidade_infantil_ano",
+    "prefeito_ibge", "prefeito_ibge_ano", "prefeito_wikidata", "prefeito_wikidata_desde", "situacao_mandato",
+    "site_oficial", "wikidata", "wikipedia",
 ]
+CAMPOS_MUNICIPIO = [
+    "regiao_intermediaria", "regiao_imediata", "gentilico", "populacao", "populacao_ano", "area_km2", "densidade",
+    "pib_per_capita", "pib_per_capita_ano", "idhm", "idhm_ano", "salario_medio_sm", "salario_medio_sm_ano",
+    "escolarizacao_6_14", "escolarizacao_6_14_ano", "mortalidade_infantil", "mortalidade_infantil_ano",
+    "prefeito_ibge", "prefeito_ibge_ano", "prefeito_wikidata", "prefeito_wikidata_desde",
+    "site_oficial", "wikidata", "wikipedia",
+]
+INTEIROS = {"populacao", "populacao_ano", "pib_per_capita_ano", "idhm_ano", "salario_medio_sm_ano",
+            "escolarizacao_6_14_ano", "mortalidade_infantil_ano", "prefeito_ibge_ano"}
 PARTICULAS = {"da", "de", "do", "das", "dos", "e"}
+
+
+def _tokens(s: str | None) -> list[str]:
+    n = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().upper()
+    n = "".join(ch if ch.isalnum() else " " for ch in n)
+    return [t for t in n.split() if t not in {"DA", "DE", "DO", "DAS", "DOS", "E", "DI", "DU"}]
+
+
+def nomes_compativeis(a: str | None, b: str | None) -> bool:
+    A, B = _tokens(a), _tokens(b)
+    if not A or not B:
+        return False
+    comum = len([t for t in A if t in set(B)])
+    menor = min(len(A), len(B))
+    if menor == 1:
+        return comum == 1 and (B.count(A[0]) > 0 if len(A) == 1 else A.count(B[0]) > 0)
+    return comum >= 2 or comum == menor
+
+
+def inicio_mandato(eleicao: dict) -> int | None:
+    """Ordinária de 2024 -> mandato desde 2025; suplementar -> desde o próprio ano."""
+    ano = eleicao.get("ano")
+    if not ano:
+        return None
+    return int(ano) if eleicao.get("suplementar") else int(ano) + 1
+
+
+def ibge_vigente(nome: str | None, ano, eleicao: dict) -> str | None:
+    """Prefeito do painel do IBGE só conta se a referência for do mandato vigente."""
+    ini = inicio_mandato(eleicao)
+    try:
+        return nome if (nome and (ini is None or ano is None or int(ano) >= ini)) else None
+    except (TypeError, ValueError):
+        return nome
+
+
+def situacao_mandato(nomes_tse: list, ibge: str | None, wd: str | None) -> str:
+    """consistente | divergente | parcial | sem_dados — mesma leitura do painel do briefing.
+    Quem chama já descartou o valor do IBGE anterior ao mandato (ibge_vigente)."""
+    nomes_tse = [n for n in nomes_tse if n]
+    outras = [x for x in (ibge, wd) if x]
+    if not nomes_tse:
+        return "parcial" if outras else "sem_dados"
+    if not outras:
+        return "parcial"
+    confere = [any(nomes_compativeis(o, n) for n in nomes_tse) for o in outras]
+    return "consistente" if all(confere) else "divergente"
 
 
 def titulo(s: str | None) -> str:
@@ -81,44 +144,74 @@ def seguro_csv(v):
     return v
 
 
-def registros(dir_pref: Path, nomes: dict[str, str], hoje: date) -> list[dict]:
-    out = []
+def carregar_municipios(caminho: Path | None) -> dict[str, dict]:
+    if caminho and caminho.exists():
+        return json.loads(caminho.read_text(encoding="utf-8")).get("municipios", {})
+    return {}
+
+
+def registros(dir_pref: Path, nomes: dict[str, str], hoje: date, muns: dict[str, dict] | None = None) -> list[dict]:
+    """Uma linha por município. Sem o arquivo de municípios, só os que têm prefeito no TSE."""
+    muns = muns or {}
+    tse = {}
     for arq in sorted(dir_pref.glob("[a-z][a-z].json")):
         doc = json.loads(arq.read_text(encoding="utf-8"))
-        uf = doc["uf"]
         for ibge, reg in doc["municipios"].items():
-            p, e, v = reg.get("prefeito") or {}, reg.get("eleicao") or {}, reg.get("vice") or {}
-            out.append({
-                "codigo_ibge": ibge,
-                "uf": uf,
-                "regiao": REGIAO.get(uf, ""),
-                "municipio": nomes.get(ibge) or titulo((reg.get("tse") or {}).get("nm_ue")),
-                "prefeito": titulo(p.get("nome_urna") or p.get("nome")),
-                "nome_completo": titulo(p.get("nome")),
-                "partido": p.get("partido"),
-                "partido_nome": titulo(p.get("partido_nome")) or None,
-                "federacao": p.get("federacao"),
-                "genero": titulo(p.get("genero")) or None,
-                "nascimento": p.get("nascimento"),
-                "idade": idade(p.get("nascimento"), hoje),
-                "instrucao": titulo(p.get("instrucao")) or None,
-                "ocupacao": titulo(p.get("ocupacao")) or None,
-                "eleicao_data": e.get("data"),
-                "eleicao_ano": e.get("ano"),
-                "turno": e.get("turno"),
-                "suplementar": bool(e.get("suplementar")),
-                "votos": p.get("votos"),
-                "votos_pct": p.get("votos_pct"),
-                "bens_declarados": p.get("bens_total"),
-                "vice": titulo(v.get("nome_urna") or v.get("nome")) or None,
-                "vice_partido": v.get("partido"),
-                "foto": p.get("foto"),
-                "briefing": f"index.html#/{uf}/{ibge}",
-                "codigo_tse": (reg.get("tse") or {}).get("sg_ue"),
-            })
+            tse[ibge] = (doc["uf"], reg)
+    out = []
+    for ibge in sorted(set(tse) | set(muns)):
+        m = muns.get(ibge, {})
+        uf, reg = tse.get(ibge, (m.get("uf"), None))
+        reg = reg or {}
+        p, e, v = reg.get("prefeito") or {}, reg.get("eleicao") or {}, reg.get("vice") or {}
+        r = {
+            "codigo_ibge": ibge,
+            "uf": uf,
+            "regiao": REGIAO.get(uf or "", "") or m.get("regiao") or "",
+            "municipio": m.get("nome") or nomes.get(ibge) or titulo((reg.get("tse") or {}).get("nm_ue")),
+            "prefeito": titulo(p.get("nome_urna") or p.get("nome")) or None,
+            "nome_completo": titulo(p.get("nome")) or None,
+            "partido": p.get("partido"),
+            "partido_nome": titulo(p.get("partido_nome")) or None,
+            "federacao": p.get("federacao"),
+            "genero": titulo(p.get("genero")) or None,
+            "nascimento": p.get("nascimento"),
+            "idade": idade(p.get("nascimento"), hoje),
+            "instrucao": titulo(p.get("instrucao")) or None,
+            "ocupacao": titulo(p.get("ocupacao")) or None,
+            "eleicao_data": e.get("data"),
+            "eleicao_ano": e.get("ano"),
+            "turno": e.get("turno"),
+            "suplementar": bool(e.get("suplementar")) if reg else None,
+            "votos": p.get("votos"),
+            "votos_pct": p.get("votos_pct"),
+            "bens_declarados": p.get("bens_total"),
+            "vice": titulo(v.get("nome_urna") or v.get("nome")) or None,
+            "vice_partido": v.get("partido"),
+            "foto": p.get("foto"),
+            "briefing": f"index.html#/{uf}/{ibge}" if uf else None,
+            "codigo_tse": (reg.get("tse") or {}).get("sg_ue"),
+            "tem_prefeito_tse": bool(reg),
+        }
+        for k in CAMPOS_MUNICIPIO:
+            val = m.get(k)
+            if k in INTEIROS and val is not None:
+                try:
+                    val = int(float(val))
+                except (TypeError, ValueError):
+                    val = None
+            r[k] = val
+        if r["prefeito_ibge"]:
+            r["prefeito_ibge"] = titulo(r["prefeito_ibge"])
+        r["situacao_mandato"] = ("nao_se_aplica" if uf == "DF" else
+                                 situacao_mandato([p.get("nome"), p.get("nome_urna")],
+                                                  ibge_vigente(m.get("prefeito_ibge"), m.get("prefeito_ibge_ano"), e),
+                                                  m.get("prefeito_wikidata")))
+        out.append(r)
+
     def chave(r):
-        nome = unicodedata.normalize("NFKD", r["municipio"]).encode("ascii", "ignore").decode().lower()
-        return (r["uf"], nome)
+        nome = unicodedata.normalize("NFKD", r["municipio"] or "").encode("ascii", "ignore").decode().lower()
+        return (r["uf"] or "", nome)
     return sorted(out, key=chave)
 
 
@@ -133,11 +226,15 @@ def main(argv=None):
     ap.add_argument("--prefeitos", default=str(RAIZ / "data" / "prefeitos"))
     ap.add_argument("--ibge", help="JSON local da API de municípios do IBGE (senão baixa)")
     ap.add_argument("--hoje", help="data de referência para a idade (AAAA-MM-DD); padrão: hoje")
+    ap.add_argument("--municipios", default=str(RAIZ / "data" / "municipios" / "municipios.json"),
+                    help="saída de enriquecer_municipios.py (opcional)")
     args = ap.parse_args(argv)
 
     dir_pref = Path(args.prefeitos)
     hoje = date.fromisoformat(args.hoje) if args.hoje else date.today()
-    regs = registros(dir_pref, nomes_ibge(args.ibge), hoje)
+    muns = carregar_municipios(Path(args.municipios))
+    nomes = {} if muns else nomes_ibge(args.ibge)   # com o arquivo de municípios, o nome oficial já vem nele
+    regs = registros(dir_pref, nomes, hoje, muns)
     if not regs:
         raise SystemExit("nenhum registro encontrado: rode build_prefeitos.py antes")
 
@@ -146,7 +243,8 @@ def main(argv=None):
         "schema": SCHEMA, "gerado_em": agora, "idade_referencia": hoje.isoformat(),
         "fonte": "TSE (dados abertos) + IBGE; consolidado por Briefing Municipal — EDP Sistemas",
         "licenca": "Dados públicos do TSE e do IBGE (CC BY). Cite as fontes.",
-        "total": len(regs), "colunas": COLUNAS, "registros": regs,
+        "total": len(regs), "com_prefeito_tse": sum(1 for r in regs if r["tem_prefeito_tse"]),
+        "dados_municipio": bool(muns), "colunas": COLUNAS, "registros": regs,
     }
     gravar_atomico(dir_pref / "todos.json", json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
 
@@ -160,12 +258,14 @@ def main(argv=None):
             if isinstance(v, bool):
                 v = "sim" if v else "nao"
             elif isinstance(v, float):
-                v = f"{v:.2f}".replace(".", ",")  # decimal brasileiro, como o Excel pt-BR espera
+                casas = 3 if c == "idhm" else 2
+                v = f"{v:.{casas}f}".replace(".", ",")  # decimal brasileiro, como o Excel pt-BR espera
             linha.append("" if v is None else seguro_csv(v))
         w.writerow(linha)
     gravar_atomico(dir_pref / "todos.csv", ("\ufeff" + buf.getvalue()).encode("utf-8"))
 
-    print(f"OK: {len(regs)} prefeitos -> todos.json ({(dir_pref / 'todos.json').stat().st_size / 1e6:.2f} MB) "
+    print(f"OK: {len(regs)} municípios ({doc['com_prefeito_tse']} com prefeito no TSE; dados do município: "
+          f"{'sim' if muns else 'não'}) -> todos.json ({(dir_pref / 'todos.json').stat().st_size / 1e6:.2f} MB) "
           f"e todos.csv ({(dir_pref / 'todos.csv').stat().st_size / 1e6:.2f} MB)")
     return 0
 
