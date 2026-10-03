@@ -95,6 +95,14 @@ jobs:
           # encerra limpo antes do timeout do passo; o que faltar continua na próxima execução
           python3 etl/fotos_prefeitos.py --paralelo 12 --limite-minutos 24
 
+      - name: Dados dos municípios (IBGE + Wikidata)
+        # falha aqui não impede publicar; fonte fora do ar mantém os valores da semana anterior
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          python3 tests/test_enriquecer.py
+          python3 etl/enriquecer_municipios.py
+
       - name: Consolidado nacional (todos.json / todos.csv)
         run: |
           python3 tests/test_consolidar.py
@@ -108,6 +116,7 @@ jobs:
           path: |
             data/prefeitos/_auditoria.json
             data/fotos/_manifest.json
+            data/municipios/municipios.json
           if-no-files-found: ignore
           retention-days: 30
 
@@ -118,6 +127,7 @@ jobs:
           git config user.email "etl-bot@users.noreply.github.com"
           git add data/prefeitos
           if [ -d data/fotos ]; then git add data/fotos; fi
+          if [ -d data/municipios ]; then git add data/municipios; fi
           if git diff --cached --quiet; then echo "sem mudanças"; exit 0; fi
           git commit -m "dados: atualiza prefeitos (TSE) $(date -u +%F)"
           # se alguém editou o repositório durante a execução, sincroniza antes de publicar
