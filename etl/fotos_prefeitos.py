@@ -19,6 +19,10 @@ from __future__ import annotations
 
 import argparse
 import io
+import struct
+import time
+import zlib
+from concurrent.futures import ThreadPoolExecutor
 import json
 import re
 import sys
@@ -138,6 +142,37 @@ def abrir_zip(url: str, tmpdir: Path):
     return zipfile.ZipFile(destino), None, "download"
 
 
+def ler_membro_remoto(url: str, info: zipfile.ZipInfo, timeout: int = 60) -> bytes:
+    """Baixa só os bytes de um membro do ZIP (cabeçalho local + dados) e descompacta.
+
+    Cada chamada é independente, então dá para rodar várias em paralelo. A integridade
+    é conferida pelo CRC32 do diretório central.
+    """
+    folga = 30 + len(info.orig_filename.encode("utf-8", "replace")) + 2048  # cabeçalho local + extra
+    ini = info.header_offset
+    fim = ini + folga + info.compress_size
+    req = urllib.request.Request(url, headers={**UA, "Range": f"bytes={ini}-{fim}"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        if r.status != 206:
+            raise OSError("servidor ignorou o cabeçalho Range")
+        bruto = r.read()
+    if bruto[:4] != b"PK\x03\x04":
+        raise ValueError("cabeçalho local inválido")
+    n, m = struct.unpack("<HH", bruto[26:30])
+    dados = bruto[30 + n + m: 30 + n + m + info.compress_size]
+    if len(dados) != info.compress_size:
+        raise ValueError("membro truncado")
+    if info.compress_type == zipfile.ZIP_STORED:
+        conteudo = dados
+    elif info.compress_type == zipfile.ZIP_DEFLATED:
+        conteudo = zlib.decompressobj(-15).decompress(dados)
+    else:
+        raise ValueError(f"compressão não suportada: {info.compress_type}")
+    if zlib.crc32(conteudo) & 0xFFFFFFFF != info.CRC:
+        raise ValueError("CRC divergente")
+    return conteudo
+
+
 # --------------------------------------------------------------------------- imagens
 
 def para_webp(dados: bytes) -> bytes:
@@ -177,13 +212,46 @@ def carregar_alvos(dir_prefeitos: Path) -> dict[tuple[str, int], dict[str, str]]
     return alvos
 
 
+def salvar_estado(dir_out: Path, fotos: dict, relatorio: dict):
+    manifest = {"fonte": "TSE — Fotos de candidatos (CC BY)", "fotos": dict(sorted(fotos.items())),
+                "ultima_execucao": {k: v for k, v in relatorio.items() if k != "sem_foto"},
+                "sem_foto": relatorio["sem_foto"]}
+    tmp = dir_out / "_manifest.json.tmp"
+    tmp.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(dir_out / "_manifest.json")  # gravação atômica: nunca fica pela metade
+
+
+def atualizar_jsons(dir_pref: Path, fotos: dict, ufs: set[str] | None = None):
+    """Grava prefeito.foto nos JSON por UF (o "v" invalida cache quando o prefeito muda)."""
+    for arq in sorted(dir_pref.glob("[a-z][a-z].json")):
+        if ufs and arq.stem.upper() not in ufs:
+            continue
+        doc = json.loads(arq.read_text(encoding="utf-8"))
+        mudou = False
+        for ibge, reg in doc["municipios"].items():
+            alvo = f"fotos/{ibge}.webp?v={fotos[ibge]}" if fotos.get(ibge) == reg["prefeito"].get("sq") else None
+            if "foto" not in reg["prefeito"] or reg["prefeito"]["foto"] != alvo:
+                reg["prefeito"]["foto"] = alvo
+                mudou = True
+        if mudou:
+            tmp = arq.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            tmp.replace(arq)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--prefeitos", default=str(RAIZ / "data" / "prefeitos"))
     p.add_argument("--out", default=str(RAIZ / "data" / "fotos"))
     p.add_argument("--url", default=URL_PADRAO, help="modelo com {ano} e {uf}")
     p.add_argument("--uf", nargs="*", help="limitar a algumas UFs")
+    p.add_argument("--paralelo", type=int, default=12, help="downloads simultâneos por UF")
+    p.add_argument("--limite-minutos", type=float, default=0,
+                   help="encerra de forma limpa ao atingir o tempo, salvando o progresso (0 = sem limite)")
     args = p.parse_args(argv)
+    t0 = time.monotonic()
+    def estourou() -> bool:
+        return bool(args.limite_minutos) and (time.monotonic() - t0) > args.limite_minutos * 60
 
     dir_pref, dir_out = Path(args.prefeitos), Path(args.out)
     dir_out.mkdir(parents=True, exist_ok=True)
@@ -196,70 +264,79 @@ def main(argv=None):
         filtro = {u.upper() for u in args.uf}
         alvos = {k: v for k, v in alvos.items() if k[0] in filtro}
 
-    relatorio = {"novas": 0, "mantidas": 0, "sem_foto": [], "ufs": {}}
+    relatorio = {"novas": 0, "mantidas": 0, "sem_foto": [], "ufs": {}, "interrompido": False}
     for (uf, ano), muns in sorted(alvos.items()):
+        if estourou():
+            relatorio["interrompido"] = True
+            print(f"[limite] tempo atingido; progresso salvo, continua na próxima execução (parou antes de {uf})")
+            break
         pendentes = {i: sq for i, sq in muns.items() if not (fotos.get(i) == sq and (dir_out / f"{i}.webp").exists())}
         relatorio["mantidas"] += len(muns) - len(pendentes)
+        chave = f"{uf}/{ano}"
         if not pendentes:
-            relatorio["ufs"][f"{uf}/{ano}"] = "sem alterações"
+            relatorio["ufs"][chave] = "sem alterações"
             continue
         url = args.url.format(ano=ano, uf=uf)
+        t_uf = time.monotonic()
         with tempfile.TemporaryDirectory() as tmp:
             try:
                 z, remoto, modo = abrir_zip(url, Path(tmp))
             except Exception as exc:  # noqa: BLE001 - uma UF com falha não derruba as outras
-                print(f"[{uf}/{ano}] falha ao abrir {url}: {exc}", file=sys.stderr)
-                relatorio["ufs"][f"{uf}/{ano}"] = f"erro: {exc}"
+                print(f"[{chave}] falha ao abrir {url}: {exc}", file=sys.stderr)
+                relatorio["ufs"][chave] = f"erro: {exc}"
                 relatorio["sem_foto"] += [{"ibge": i, "sq": s, "motivo": "zip indisponível"} for i, s in pendentes.items()]
                 continue
             if z is None:
-                relatorio["ufs"][f"{uf}/{ano}"] = "zip ausente no TSE"
+                relatorio["ufs"][chave] = "zip ausente no TSE"
                 relatorio["sem_foto"] += [{"ibge": i, "sq": s, "motivo": "zip ausente"} for i, s in pendentes.items()]
                 continue
             with z:
                 idx = indexar_membros(z)
-                ok = 0
+                tarefas = []
                 for ibge, sq in sorted(pendentes.items()):
                     membro = idx.get(sq)
-                    if not membro:
+                    if membro:
+                        tarefas.append((ibge, sq, z.getinfo(membro)))
+                    else:
                         relatorio["sem_foto"].append({"ibge": ibge, "sq": sq, "motivo": "foto não encontrada no zip"})
-                        continue
-                    try:
-                        (dir_out / f"{ibge}.webp").write_bytes(para_webp(z.read(membro)))
-                        fotos[ibge] = sq
-                        ok += 1
-                    except Exception as exc:  # noqa: BLE001 - imagem corrompida não derruba a UF
-                        relatorio["sem_foto"].append({"ibge": ibge, "sq": sq, "motivo": f"imagem inválida: {exc}"})
-                relatorio["novas"] += ok
-                mb = f", {remoto.bytes_baixados / 1e6:.1f} MB trafegados" if remoto else ""
-                relatorio["ufs"][f"{uf}/{ano}"] = f"{ok}/{len(pendentes)} via {modo}{mb}"
-                print(f"[{uf}/{ano}] {relatorio['ufs'][f'{uf}/{ano}']}")
 
-    # remove fotos de quem deixou de ser prefeito em todas as bases
-    vigentes = {i for muns in carregar_alvos(dir_pref).values() for i in muns}
-    if not args.uf:
+                def processar(t):
+                    ibge, sq, info = t
+                    bruto = ler_membro_remoto(url, info) if remoto else z.read(info)
+                    (dir_out / f"{ibge}.webp").write_bytes(para_webp(bruto))
+                    return ibge, sq
+
+                ok, trafego = 0, sum(i.compress_size for _, _, i in tarefas)
+                # no modo download o arquivo é local: zipfile não é seguro para leitura concorrente
+                workers = max(1, args.paralelo) if remoto else 1
+                with ThreadPoolExecutor(max_workers=workers) as ex:
+                    for t, fut in [(t, ex.submit(processar, t)) for t in tarefas]:
+                        try:
+                            ibge, sq = fut.result()
+                            fotos[ibge] = sq
+                            ok += 1
+                        except Exception as exc:  # noqa: BLE001 - imagem ruim não derruba a UF
+                            relatorio["sem_foto"].append({"ibge": t[0], "sq": t[1], "motivo": f"imagem inválida: {exc}"})
+                relatorio["novas"] += ok
+                extra = f", ~{(remoto.bytes_baixados + trafego) / 1e6:.1f} MB" if remoto else ""
+                relatorio["ufs"][chave] = f"{ok}/{len(pendentes)} via {modo}{extra}, {time.monotonic() - t_uf:.0f}s"
+                print(f"[{chave}] {relatorio['ufs'][chave]}", flush=True)
+        # checkpoint por UF: uma interrupção depois daqui não perde este trabalho
+        atualizar_jsons(dir_pref, fotos, {uf})
+        salvar_estado(dir_out, fotos, relatorio)
+
+    # remove fotos de quem deixou de ser prefeito (só numa execução completa e sem filtro)
+    if not args.uf and not relatorio["interrompido"]:
+        vigentes = {i for muns in carregar_alvos(dir_pref).values() for i in muns}
         for i in list(fotos):
             if i not in vigentes:
                 (dir_out / f"{i}.webp").unlink(missing_ok=True)
                 fotos.pop(i)
 
-    # grava o caminho da foto nos JSON por UF (o "v" invalida cache quando o prefeito muda)
-    for arq in sorted(dir_pref.glob("[a-z][a-z].json")):
-        doc = json.loads(arq.read_text(encoding="utf-8"))
-        mudou = False
-        for ibge, reg in doc["municipios"].items():
-            alvo = f"fotos/{ibge}.webp?v={fotos[ibge]}" if fotos.get(ibge) == reg["prefeito"].get("sq") else None
-            if "foto" not in reg["prefeito"] or reg["prefeito"]["foto"] != alvo:
-                reg["prefeito"]["foto"] = alvo
-                mudou = True
-        if mudou:
-            arq.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-
-    manifest = {"fonte": "TSE — Fotos de candidatos (CC BY)", "fotos": dict(sorted(fotos.items())),
-                "ultima_execucao": {k: v for k, v in relatorio.items() if k != "sem_foto"},
-                "sem_foto": relatorio["sem_foto"]}
-    arq_manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"OK: {relatorio['novas']} novas, {relatorio['mantidas']} mantidas, {len(relatorio['sem_foto'])} sem foto")
+    atualizar_jsons(dir_pref, fotos)
+    salvar_estado(dir_out, fotos, relatorio)
+    print(f"OK: {relatorio['novas']} novas, {relatorio['mantidas']} mantidas, {len(relatorio['sem_foto'])} sem foto"
+          f"{' (interrompido pelo limite de tempo)' if relatorio['interrompido'] else ''} em {time.monotonic() - t0:.0f}s")
     return 0
 
 
