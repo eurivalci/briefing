@@ -17,7 +17,7 @@ const TSE_CE = {
       eleicao: {ano: 2024, cd_eleicao: "2045202024", descricao: "Eleições Municipais 2024", data: "2024-10-27", turno: 2, suplementar: false},
       prefeito: {sq: "60001", nome: "EVANDRO TESTE LEAL", nome_urna: "EVANDRO", numero: "13", partido: "PT", partido_nome: "PARTIDO DOS TRABALHADORES",
         federacao: null, coligacao: null, nascimento: "1970-03-15", genero: "MASCULINO", instrucao: "SUPERIOR COMPLETO", ocupacao: "EMPRESÁRIO",
-        votos: 650000, votos_pct: 65.0, bens_total: 351500.5, bens_qtd: 2},
+        votos: 650000, votos_pct: 65.0, bens_total: 351500.5, bens_qtd: 2, foto: "fotos/2304400.webp?v=60001"},
       vice: {nome: "GABRIELLA VICE", nome_urna: "GABRIELLA", partido: "PT"},
       eleicoes_anteriores_no_mandato: [],
       trajetoria: [{ano: 2020, cargo: "Vereador", local: "FORTALEZA", uf: "CE", partido: "PT", resultado: "ELEITO POR QP"}],
@@ -130,7 +130,10 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   assert(/650\.000/.test(gov) && /65,0% dos válidos/.test(gov), "votos formatados");
   assert(/R\$\s?351\.501/.test(gov) || /R\$\s?351\.500/.test(gov), "bens formatados: " + gov.match(/R\$[^e]+/));
   assert(/2º turno/.test(gov) && /Gabriella/.test(gov), "turno e vice");
-  assert(d.querySelector("#s-gov img.portrait").getAttribute("src").startsWith("https://commons.wikimedia.org/"), "foto via https");
+  assert.strictEqual(d.querySelector("#s-gov img.portrait").getAttribute("src"), "./data/fotos/2304400.webp?v=60001", "foto oficial do TSE tem prioridade");
+  assert(/TSE/.test(d.querySelector("#s-gov figcaption").textContent), "crédito da foto");
+  const fT = BM().fotoTSE;
+  assert(!fT({foto: "../../etc/passwd"}) && !fT({foto: "javascript:alert(1)"}) && !fT({foto: "fotos/123.webp"}) && !fT({}), "caminho de foto validado");
   assert.strictEqual(d.querySelectorAll("#s-mand .tag.ok").length, 2, "IBGE e Wikidata conferem com o TSE");
   // indicadores: valor "-" ignorado, ano mais recente válido, 1 indicador com HTTP 500 fica de fora
   await esperar(w, () => d.querySelector("#s-ind .grid-ind"), 3000, "indicadores");
