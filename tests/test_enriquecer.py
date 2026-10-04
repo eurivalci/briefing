@@ -28,7 +28,7 @@ MUN = {
     "2304400": ("Fortaleza", "CE"), "2303709": ("Caucaia", "CE"), "2507507": ("João Pessoa", "PB"),
     "5300108": ("Brasília", "DF"), "5101837": ("Boa Esperança do Norte", "MT"),
 }
-CTRL = {"lote": True, "falhar": set(), "chamadas": 0, "wd_falha": False}
+CTRL = {"lote": True, "falhar": set(), "chamadas": 0, "wd_falha": False, "lote_ruim": set(), "paths": []}
 
 
 def localidades():
@@ -70,6 +70,7 @@ class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         CTRL["chamadas"] += 1
         p = urllib.parse.unquote(self.path)
+        CTRL["paths"].append(p)
         if p.endswith("/localidades/municipios"):
             return self.responder(localidades())
         if p.endswith("/pesquisas/33/indicadores"):
@@ -80,7 +81,7 @@ class H(http.server.BaseHTTPRequestHandler):
             ind, cods = int(m.group(2)), m.group(3).split("|")
             if ind in CTRL["falhar"]:
                 return self.responder({"erro": "fora do ar"}, 503)
-            if len(cods) > 1 and not CTRL["lote"]:
+            if len(cods) > 1 and (not CTRL["lote"] or ind in CTRL["lote_ruim"]):
                 return self.responder({"erro": "lote não suportado"}, 500)
             # o IBGE devolve série por ano; o mais recente pode vir vazio
             if ind in (29169, 29170):   # texto: Caucaia ainda só tem o prefeito do mandato anterior
@@ -144,16 +145,30 @@ def main():
     assert d["municipios"]["2303709"]["prefeito_wikidata"] is None, "rótulo sem nome (Q999999) descartado"
     assert all(s["ok"] for s in d["status"].values()), d["status"]
 
-    # ---------- (B) lote recusado: divide até 1 e chega no mesmo resultado
+    # ---------- (B) lote recusado: sonda uma vez e vai direto ao unitário, SEM cascata de divisões
     CTRL.update(lote=False, chamadas=0)
     b = tmp / "b.json"
     rodar(b, url, "--forcar")
     db = json.loads(b.read_text(encoding="utf-8"))
-    assert CTRL["chamadas"] > chamadas_lote * 3, "sem lote, mais chamadas"
-    assert db["status"]["populacao"]["divisoes"] > 0
+    assert db["status"]["populacao"]["modo"] == "unitario"
+    indicadores = len(E.INDICADORES) + 2
+    # localidades (1) + wikidata (1) + sonda recusada com 1 nova tentativa (2) + meta do painel (1)
+    # + exatamente 1 chamada por município e indicador
+    assert CTRL["chamadas"] == 5 + indicadores * len(MUN), f"sem cascata: {CTRL['chamadas']} chamadas"
     for cod in MUN:
         for k in ("populacao", "idhm", "prefeito_ibge", "gentilico"):
             assert db["municipios"][cod][k] == d["municipios"][cod][k], (cod, k)
+
+    # ---------- (B2) API aceita lote, mas um indicador falha em lote: refaz unitário UMA vez
+    CTRL.update(lote=True, lote_ruim={29168}, chamadas=0, paths=[])
+    b2 = tmp / "b2.json"
+    rodar(b2, url, "--forcar")
+    d2 = json.loads(b2.read_text(encoding="utf-8"))
+    p29168 = [p for p in CTRL["paths"] if "/indicadores/29168/" in p]
+    # lote com 1 nova tentativa (2) + 1 por município, sem cascata
+    assert len(p29168) == 2 + len(MUN), f"sem cascata: {len(p29168)}"
+    assert d2["municipios"]["2304400"]["densidade"] == 12.5 and d2["status"]["densidade"]["ok"]
+    CTRL["lote_ruim"] = set()
 
     # ---------- (C) fonte fora do ar: mantém o anterior e diz que manteve
     CTRL.update(lote=True, falhar={29171, 29170}, wd_falha=True)
@@ -166,11 +181,40 @@ def main():
         assert dc["status"][fonte]["ok"] is False and dc["status"][fonte]["retido"] is True, fonte
     assert dc["status"]["idhm"]["ok"] is True, "fonte saudável segue atualizando"
 
-    # ---------- (D) cache: arquivo novo não é refeito sem --forcar
-    CTRL.update(falhar=set(), wd_falha=False, chamadas=0)
+    # ---------- (D) retomada: só o que falhou é buscado de novo; depois, nada
+    CTRL.update(falhar=set(), wd_falha=False, chamadas=0, paths=[])
     rodar(a, url)
-    assert CTRL["chamadas"] == 0, "arquivo recente reaproveitado"
+    ind_pedidos = {p.split("/indicadores/")[1].split("/")[0] for p in CTRL["paths"] if "/resultados/" in p and p.count("|") >= 3}
+    assert ind_pedidos == {"29171", "29170"}, f"só população e prefeito (os que falharam): {ind_pedidos}"
+    assert not any(p.endswith("/localidades/municipios") for p in CTRL["paths"]), "cadastro fresco não é refeito"
+    assert json.loads(a.read_text(encoding="utf-8"))["status"]["wikidata"]["ok"], "Wikidata refeita"
+    CTRL.update(chamadas=0)
+    rodar(a, url)
+    assert CTRL["chamadas"] == 0, "tudo fresco: nenhuma chamada"
     assert not list(tmp.glob("*.tmp"))
+
+    # ---------- (E) limite de tempo: salva a população, adia o resto, retoma depois sem refazer
+    class Relogio:
+        t = -1.0
+        @classmethod
+        def monotonic(cls):
+            cls.t += 1.0
+            return cls.t * 60   # cada consulta ao relógio "avança" 1 minuto
+    real = E.time.monotonic
+    E.time.monotonic = Relogio.monotonic
+    e = tmp / "e.json"
+    try:
+        rodar(e, url, "--forcar", "--limite-minutos", "1.5")
+    finally:
+        E.time.monotonic = real
+    de = json.loads(e.read_text(encoding="utf-8"))
+    assert de["status"]["populacao"]["ok"] and de["municipios"]["2304400"]["populacao"] == 1400.0, "população salva primeiro"
+    assert "idhm" not in de["status"], "o resto foi adiado, não marcado como falha"
+    CTRL.update(paths=[])
+    rodar(e, url)
+    full29171 = [p for p in CTRL["paths"] if "/indicadores/29171/" in p and p.count("|") >= 3]
+    assert not full29171, "população fresca não é buscada de novo na retomada"
+    assert json.loads(e.read_text(encoding="utf-8"))["status"]["idhm"]["ok"], "retomada completou o adiado"
     # ---------- (F) as outras duas leituras do IBGE também descompactam gzip
     B.IBGE_MUNICIPIOS_URL = url + "/api/v1/localidades/municipios"
     C.IBGE_MUNICIPIOS_URL = url + "/api/v1/localidades/municipios"
@@ -191,7 +235,7 @@ def main():
             assert "0x8b" in str(e), e
 
     srv.shutdown()
-    print(f"TODOS OS TESTES DO COLETOR PASSARAM (lote: {chamadas_lote} chamadas; sem lote: divisão adaptativa)")
+    print(f"TODOS OS TESTES DO COLETOR PASSARAM (lote: {chamadas_lote} chamadas; sem lote: unitário, sem cascata)")
 
 
 if __name__ == "__main__":

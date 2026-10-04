@@ -246,6 +246,26 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   assert.deepStrictEqual(erros, [], "sem exceções na página");
   w.close();
 
+  // ================= produção atual: consolidado SEM dados do município (só as 26 colunas base)
+  const BASE26 = COLS_PUBLICADAS.slice(0, 26);
+  const TODOS_BASE = {schema: 1, gerado_em: TODOS.gerado_em, total: 5, colunas: BASE26,
+    registros: TODOS.registros.slice(0, 5).map(r => Object.fromEntries(BASE26.map(k => [k, r[k]])))};
+  const CAPAG_OBS = {municipios: {"2300001": [{posicao: "2026-09-01", ano_base: 2025, capag: "B", qualidade_informacao: "A",
+    origem_nota: "ICF", observacao: "Nota rebaixada em razão do ICF"}]}};
+  ({w, d, erros} = montar("http://app.local/prefeitos.html", u => u.includes("todos.json") ? TODOS_BASE : u.includes("capag/ce.json") ? CAPAG_OBS : null));
+  await esperar(() => linhas(d).length === 5, 3000, "lista sem dados do município");
+  assert(/Clique em um município para abrir a ficha/.test(d.querySelector("#dica").textContent), "dica de uso visível");
+  linhas(d).find(l => l.dataset.cod === "2300001").querySelector("td:nth-child(3)").click();   // clique fora do link também abre
+  assert(!d.querySelector("#ficha-fundo").hidden, "ficha abre com o consolidado de produção");
+  await esperar(() => /Origem da nota final: ICF/.test(d.querySelector("#ficha").textContent), 2000, "CAPAG completa");
+  const fb = d.querySelector("#ficha").textContent.replace(/\s+/g, " ");
+  assert(/Nota rebaixada em razão do ICF/.test(fb) && /Qualidade da informação \(ICF\)\s*A/.test(fb), "ICF e observação: " + fb.slice(fb.indexOf("Liquidez"), fb.indexOf("Liquidez") + 200));
+  assert((fb.match(/não informado/g) || []).length >= 6, "campos do IBGE ausentes ditos como ausentes");
+  const gb = P().gruposFicha(P().S.ficha.r, P().S.ficha.capag);
+  assert.strictEqual(gb.find(g => g.nome === "Município (IBGE)").ok, 0, "selo mostra o IBGE vazio");
+  assert.deepStrictEqual(erros, [], "sem exceções com o formato de produção");
+  w.close();
+
   // ================= link direto para a ficha + escape de HTML
   const TODOS_XSS = JSON.parse(JSON.stringify(TODOS));
   TODOS_XSS.registros[0].prefeito = "<img src=x onerror=alert(1)>";

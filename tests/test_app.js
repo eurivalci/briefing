@@ -40,7 +40,8 @@ const CAPAG_CE = {
     "2304400": [
       {posicao: "2026-06-01", ano_base: 2025, capag: "C"},
       {posicao: "2026-09-01", ano_base: 2025, capag: "B", endividamento: 0.352, nota_endividamento: "A",
-       poupanca_corrente: 0.9123, nota_poupanca_corrente: "B", liquidez: 0.41, nota_liquidez: "A", qualidade_informacao: "A"},
+       poupanca_corrente: 0.9123, nota_poupanca_corrente: "B", liquidez: 0.41, nota_liquidez: "A", qualidade_informacao: "A",
+       origem_nota: "Indicadores", observacao: "Sem ressalvas"},
     ],
     "2303709": [{posicao: "2026-09-01", ano_base: 2025, capag: null, capag_publicada: "n.d."}],
   },
@@ -212,6 +213,7 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   assert(/jun\/2026 C/.test(fisc), "trajetória");
   assert(/35,2%/.test(fisc) && /91,2%/.test(fisc), "indicadores da CAPAG em %");
   assert(/ODbL/.test(fisc) && /não vincula/.test(fisc), "licença e aviso do Tesouro");
+  assert(/Origem da nota final: Indicadores\. Sem ressalvas\./.test(fisc) && /ICF, ranking do Tesouro/.test(fisc), "origem, observação e ICF");
   assert(/49,7%/.test(fisc) && d.querySelector("#s-fisc .medidor.m-alerta"), "pessoal 49,7% na faixa de alerta");
   assert(!d.querySelector("#s-fisc .alerta"), "medidor não reutiliza a classe do banner de divergência");
   assert(/27,9%/.test(fisc), "DCL do último quadrimestre preenchido (não o vazio, não o exercício anterior)");

@@ -70,7 +70,31 @@ def layout_sem_capag():
     return xlsx({"Dados": linhas})
 
 
+def layout_oficial():
+    """Ordem de colunas da planilha oficial da STN: cod_ibge, municipio, uf, CAPAG, Indicador 1, Nota 1,
+    Indicador 2, Nota 2, Indicador 3, Nota 3, ICF, Observação, Origem da Nota Final, ReF."""
+    cab = ["cod_ibge", "municipio", "uf", "CAPAG", "Indicador 1", "Nota 1", "Indicador 2", "Nota 2", "Indicador 3",
+           "Nota 3", "ICF", "Observação", "Origem da Nota Final", "ReF"]
+    linhas = [cab]
+    for i, c in enumerate(CODS):
+        obs = "Nota rebaixada em razão do ICF" if c == FORT else ("" if i % 3 else "-")
+        linhas.append([c, f"M{i}", "CE", "B" if c == FORT else ["A+", "A", "B+", "C", "D"][i % 5], 0.41, "A", 0.93, "B", 0.6, "C",
+                       "A" if c == FORT else "B", obs, "ICF" if c == FORT else "Indicadores", 1])
+    return xlsx({"CAPAG_Municipios": linhas})
+
+
 def testar_layouts():
+    with tempfile.NamedTemporaryFile(suffix=".xlsx") as t:
+        t.write(layout_oficial()); t.flush()
+        regs, diag = K.ler_planilha(t.name, set(CODS))
+    cols = {k: v["cabecalho"] for k, v in diag["colunas"].items()}
+    assert cols["capag"] == "capag" and cols["endividamento"] == "indicador 1" and cols["nota_liquidez"] == "nota 3", cols
+    assert cols["qualidade_informacao"] == "icf" and cols["observacao"] == "observacao" and cols["origem_nota"] == "origem da nota final", cols
+    f = regs[FORT]
+    assert f["capag"] == "B" and f["endividamento"] == 0.41 and f["nota_poupanca_corrente"] == "B" and f["qualidade_informacao"] == "A"
+    assert f["observacao"] == "Nota rebaixada em razão do ICF" and f["origem_nota"] == "ICF"
+    assert regs[CODS[3]]["observacao"] is None, "'-' e vazio viram ausência"
+
     validos = set(CODS)
     with tempfile.NamedTemporaryFile(suffix=".xlsx") as t:
         t.write(layout_atual()); t.flush()
