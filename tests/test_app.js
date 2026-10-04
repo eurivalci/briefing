@@ -32,6 +32,20 @@ const TSE_CE = {
   },
 };
 
+const CHAMADAS_RGF = [];
+const CAPAG_CE = {
+  aviso: "O resultado apurado para a CAPAG não vincula a posição do Tesouro Nacional.", licenca: "ODbL 1.0",
+  posicoes: [{posicao: "2026-06-01"}, {posicao: "2026-09-01"}],
+  municipios: {
+    "2304400": [
+      {posicao: "2026-06-01", ano_base: 2025, capag: "C"},
+      {posicao: "2026-09-01", ano_base: 2025, capag: "B", endividamento: 0.352, nota_endividamento: "A",
+       poupanca_corrente: 0.9123, nota_poupanca_corrente: "B", liquidez: 0.41, nota_liquidez: "A", qualidade_informacao: "A"},
+    ],
+    "2303709": [{posicao: "2026-09-01", ano_base: 2025, capag: null, capag_publicada: "n.d."}],
+  },
+};
+
 function wdRows(atual, antigo, extras = {}) {
   const b = (v) => ({value: v});
   const base = {mun: b("http://www.wikidata.org/entity/Q43463"), munLabel: b("Fortaleza"),
@@ -75,6 +89,36 @@ function respostas(url) {
   if (u.includes("pt.wikipedia.org/api/rest_v1/page/summary/Evandro_Leal")) return {title: "Evandro Leal", extract: "Evandro Leal é um político brasileiro.",
     content_urls: {desktop: {page: "https://pt.wikipedia.org/wiki/Evandro_Leal"}}};
   if (u.includes("data/prefeitos/ce.json")) return TSE_CE;
+  if (u.includes("data/capag/ce.json")) return CAPAG_CE;
+  if (u.includes("apidatalake.tesouro.gov.br")) {
+    const ano = String(new Date().getFullYear());
+    if (u.includes("extrato_entregas")) {
+      if (u.includes("id_ente=2303709") || !u.includes(`an_referencia=${ano}`)) return {items: [], hasMore: false};
+      return {items: [
+        {exercicio: +ano, instituicao: "Câmara Municipal de Fortaleza", entregavel: "Relatório de Gestão Fiscal", periodo: 3, periodicidade: "Q", status_relatorio: "HO"},
+        {exercicio: +ano, instituicao: "Prefeitura Municipal de Fortaleza - CE", entregavel: "Relatório de Gestão Fiscal", periodo: 2, periodicidade: "Q", status_relatorio: "HO", data_status: `${ano}-05-28`},
+        {exercicio: +ano, instituicao: "Prefeitura Municipal de Fortaleza - CE", entregavel: "Relatório de Gestão Fiscal", periodo: 1, periodicidade: "Q", status_relatorio: "HO"},
+        {exercicio: +ano, instituicao: "Prefeitura Municipal de Fortaleza - CE", entregavel: "Relatório Resumido de Execução Orçamentária", periodo: 4, periodicidade: "B", status_relatorio: "HO"},
+      ], hasMore: false};
+    }
+    if (/\/rgf\?/.test(u)) {
+      CHAMADAS_RGF.push(u);
+      if (!/co_tipo_demonstrativo=RGF&/.test(u.replace(/\+/g, " ").replace("RGF Simplificado", "X"))) return {items: []};
+      if (/Anexo[+ ]01/.test(u)) return {items: [
+        {anexo: "RGF-Anexo 01", cod_conta: "DespesaTotalComPessoal", conta: "DESPESA TOTAL COM PESSOAL - DTP (VIII) = (IIIa + IIIb)", coluna: "VALOR", valor: 4973000000},
+        {anexo: "RGF-Anexo 01", cod_conta: "DespesaTotalComPessoal", conta: "DESPESA TOTAL COM PESSOAL - DTP (VIII) = (IIIa + IIIb)", coluna: "% SOBRE A RCL AJUSTADA", valor: 49.73},
+        {anexo: "RGF-Anexo 01", cod_conta: "LimiteMaximo", conta: "LIMITE MÁXIMO (VII) (incisos I, II e III, art. 20 da LRF)", coluna: "% SOBRE A RCL AJUSTADA", valor: 54},
+        {anexo: "RGF-Anexo 01", cod_conta: "ReceitaCorrenteLiquidaAjustada", conta: "RECEITA CORRENTE LÍQUIDA AJUSTADA (VI)", coluna: "VALOR", valor: 10000000000},
+      ]};
+      if (/Anexo[+ ]02/.test(u)) return {items: [
+        {anexo: "RGF-Anexo 02", conta: "% DA DCL SOBRE A RCL AJUSTADA (III/RCL)", coluna: "SALDO DO EXERCÍCIO ANTERIOR", valor: 30.1},
+        {anexo: "RGF-Anexo 02", conta: "% DA DCL SOBRE A RCL AJUSTADA (III/RCL)", coluna: "Até o 1º Quadrimestre", valor: 28.5},
+        {anexo: "RGF-Anexo 02", conta: "% DA DCL SOBRE A RCL AJUSTADA (III/RCL)", coluna: "Até o 2º Quadrimestre", valor: 27.9},
+        {anexo: "RGF-Anexo 02", conta: "% DA DCL SOBRE A RCL AJUSTADA (III/RCL)", coluna: "Até o 3º Quadrimestre", valor: null},
+      ]};
+    }
+    return {items: []};
+  }
   return {__status: 404};
 }
 
@@ -161,6 +205,33 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   await esperar(w, () => /Consistente/.test(d.querySelector("#s-mand").textContent), 3000, "veredito final");
   delete atrasos["/indicadores/29170/"];
 
+  // ---------- seção fiscal: CAPAG + SICONFI
+  await esperar(w, () => /elegível/.test(d.querySelector("#s-fisc")?.textContent || "") && /quadrimestre/.test(d.querySelector("#s-fisc").textContent), 3000, "seção fiscal");
+  const fisc = d.querySelector("#s-fisc").textContent.replace(/\s+/g, " ");
+  assert(/set\/2026/.test(fisc) && d.querySelector("#s-fisc .letra").textContent === "B", "nota da posição mais recente");
+  assert(/jun\/2026 C/.test(fisc), "trajetória");
+  assert(/35,2%/.test(fisc) && /91,2%/.test(fisc), "indicadores da CAPAG em %");
+  assert(/ODbL/.test(fisc) && /não vincula/.test(fisc), "licença e aviso do Tesouro");
+  assert(/49,7%/.test(fisc) && d.querySelector("#s-fisc .medidor.m-alerta"), "pessoal 49,7% na faixa de alerta");
+  assert(!d.querySelector("#s-fisc .alerta"), "medidor não reutiliza a classe do banner de divergência");
+  assert(/27,9%/.test(fisc), "DCL do último quadrimestre preenchido (não o vazio, não o exercício anterior)");
+  assert(/2º quadrimestre/.test(fisc), "período do RGF");
+  assert(CHAMADAS_RGF.length >= 2 && CHAMADAS_RGF.every(u => /nr_periodo=2/.test(u) && /co_poder=E/.test(u)), "RGF do Executivo, não o da Câmara");
+  assert(/RCL ajustada: R\$\s?10\.000\.000\.000/.test(fisc), "RCL");
+  // leituras alternativas
+  const LP = BM().lerPessoal, LD = BM().lerDCL;
+  assert(Math.abs(LP([{conta: "DESPESA TOTAL COM PESSOAL - DTP", coluna: "% SOBRE A RCL", valor: 0.4973}]).pct - 49.73) < 1e-9, "fração vira %");
+  const calc = LP([{conta: "DESPESA TOTAL COM PESSOAL - DTP", coluna: "VALOR", valor: 50}, {conta: "RECEITA CORRENTE LÍQUIDA AJUSTADA", coluna: "VALOR", valor: 100}]);
+  assert(calc.pct === 50 && /calculado/.test(calc.origem), "pessoal calculado sem a linha de %");
+  assert(LP([{conta: "LIMITE MÁXIMO", coluna: "% SOBRE A RCL", valor: 54}]).reconhecido === false, "linha de limite não é a despesa");
+  const dcl = LD([{conta: "DÍVIDA CONSOLIDADA LÍQUIDA (DCL) (III) = (I - II)", coluna: "Até o 1º Quadrimestre", valor: -20},
+                  {conta: "RECEITA CORRENTE LÍQUIDA AJUSTADA PARA CÁLCULO DOS LIMITES DE ENDIVIDAMENTO", coluna: "Até o 1º Quadrimestre", valor: 200}]);
+  assert(dcl.pct === -10, "DCL negativa calculada (caixa maior que a dívida)");
+  assert(LD([{conta: "% DA DCL SOBRE A RCL", coluna: "Até o 2º Quadrimestre", valor: ""}]).reconhecido === false, "vazio não vira 0%");
+  assert(LD([{conta: "% DA DCL SOBRE A RCL", coluna: "Até o 1º Quadrimestre", valor: 0}]).pct === 0, "zero de verdade continua zero");
+  d.querySelector("#b-md").click(); await sleep(30);
+  assert(/CAPAG: B/.test(w.__copiado) && /pessoal: 49,7%/.test(w.__copiado), "markdown com a seção fiscal");
+
   // ---------- IBGE com prefeito do mandato anterior: desatualizado, não divergente
   BM().limparCache();
   respostasExtras["29170/resultados/2304400"] = [{id: 29170, res: [{localidade: "2304400", res: {"2021": "PREFEITO ANTERIOR"}}]}];
@@ -177,6 +248,8 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   assert.strictEqual(d.querySelectorAll("#s-mand .tag.warn").length, 2, "IBGE e Wikidata divergem do TSE");
   assert(![...d.querySelectorAll("a")].some(a => /^javascript:/i.test(a.getAttribute("href"))), "URL javascript: bloqueada");
   assert(d.querySelector("#s-gov .portrait:not(img)"), "foto da Wikidata de outra pessoa não é usada");
+  await esperar(w, () => /Nenhum RGF/.test(d.querySelector("#s-fisc")?.textContent || ""), 3000, "sem RGF");
+  assert(/não calculada/.test(d.querySelector("#s-fisc").textContent) && /n\.d\./.test(d.querySelector("#s-fisc").textContent), "CAPAG não calculada explicada");
   assert(/IBGE Cidades e Wikidata indicam Beltrano Substituto/.test(d.querySelector("#s-gov .alerta").textContent), "alerta no card");
   assert(/Eleito em 2024, segundo o TSE/.test(d.querySelector("#s-gov .role").textContent), "rótulo do cargo rebaixado");
 
@@ -204,6 +277,7 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   // ---------- DF
   d.querySelector(".uf[data-uf=DF]").click();
   await esperar(w, () => /Distrito Federal não tem prefeito/.test(d.querySelector("#s-gov")?.textContent || ""), 3000, "DF");
+  assert(/regime fiscal de estado/.test(d.querySelector("#s-fisc").textContent), "DF sem seção fiscal municipal");
   await sleep(100);
   assert(/não se aplica/.test(d.querySelector("#s-fontes").textContent), "TSE não se aplica ao DF");
   assert(!chamadas.some(u => u.includes("data/prefeitos/df.json") && false));
