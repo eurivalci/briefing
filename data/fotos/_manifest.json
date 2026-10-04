@@ -5555,8 +5555,8 @@
   "5222302": "90002073692"
  },
  "ultima_execucao": {
-  "novas": 1,
-  "mantidas": 5551,
+  "novas": 0,
+  "mantidas": 5552,
   "ufs": {
    "AC/2024": "sem alterações",
    "AL/2024": "sem alterações",
@@ -5569,7 +5569,7 @@
    "MA/2024": "sem alterações",
    "MG/2024": "sem alterações",
    "MS/2024": "sem alterações",
-   "MT/2024": "1/1 via range, ~0.9 MB, 5s",
+   "MT/2024": "sem alterações",
    "PA/2024": "sem alterações",
    "PB/2024": "sem alterações",
    "PE/2024": "sem alterações",

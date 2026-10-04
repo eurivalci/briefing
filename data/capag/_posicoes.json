@@ -1,0 +1,1204 @@
+{
+ "379e92f3-d8a9-4aa6-a23c-ca82a8f5b026": {
+  "modificado": "2024-08-19T03:23:58.424641",
+  "arquivo": "2018.json",
+  "layout": {
+   "aba": "capag_2018",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "capag_2018",
+     "com_nota": true,
+     "linhas": 5569
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 1,
+     "cabecalho": "cod ibge"
+    },
+    "capag": {
+     "indice": 10,
+     "cabecalho": "classificacao capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "indicador 3"
+    }
+   }
+  }
+ },
+ "444b8cb5-6fea-4907-82d9-018aae1d68b5": {
+  "modificado": "2024-08-19T06:34:15.127836",
+  "arquivo": "2019.json",
+  "layout": {
+   "aba": "Capag - Municípios 2019",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "Capag - Municípios 2019",
+     "com_nota": true,
+     "linhas": 5569
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 1,
+     "cabecalho": "cod ibge"
+    },
+    "capag": {
+     "indice": 10,
+     "cabecalho": "classificacao da capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "nota 3"
+    }
+   }
+  }
+ },
+ "f2149990-1ca4-475d-95c1-512f78079905": {
+  "modificado": "2024-08-18T20:18:10.612413",
+  "arquivo": "2020.json",
+  "layout": {
+   "aba": "CAPAG-Municipios (4)",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "CAPAG-Municipios (4)",
+     "com_nota": true,
+     "linhas": 5569
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 1,
+     "cabecalho": "cod ibge"
+    },
+    "capag": {
+     "indice": 10,
+     "cabecalho": "classificacao da capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "nota 3"
+    }
+   }
+  }
+ },
+ "6a218451-f1b4-4fce-ac2a-00a3675bf4eb": {
+  "modificado": "2024-08-13T21:53:01.310027",
+  "arquivo": "2022.json",
+  "layout": {
+   "aba": "capag",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "capag",
+     "com_nota": true,
+     "linhas": 5569
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 1,
+     "cabecalho": "cod ibge"
+    },
+    "capag": {
+     "indice": 20,
+     "cabecalho": "capag oficial"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "nota 3"
+    }
+   }
+  }
+ },
+ "31ed778a-9115-419c-b18e-c9131a978aef": {
+  "modificado": "2024-08-12T18:20:09.655067",
+  "arquivo": "2023.json",
+  "layout": {
+   "aba": "capag 23 ano base 22",
+   "linhas": 5323,
+   "abas": [
+    {
+     "aba": "capag 23 ano base 22",
+     "com_nota": true,
+     "linhas": 5323
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 1,
+     "cabecalho": "cod ibge"
+    },
+    "capag": {
+     "indice": 11,
+     "cabecalho": "capag oficial"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "nota 3"
+    }
+   }
+  }
+ },
+ "dd42ca38-0427-45e6-8007-b39bd79ba51f": {
+  "modificado": "2025-06-11T14:41:04.811415",
+  "arquivo": "2024-05-14.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5569
+    },
+    {
+     "aba": "CAPAG Ano Base 2023",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2022",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 88 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 48 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 49 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 83 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 84 nota 3"
+    }
+   }
+  }
+ },
+ "aaab7fd4-6c09-4f0e-8a30-545503c56b59": {
+  "modificado": "2025-06-11T14:40:48.145449",
+  "arquivo": "2024-06-02.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5569
+    },
+    {
+     "aba": "CAPAG Ano Base 2023",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2022",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 88 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 48 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 49 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 83 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 84 nota 3"
+    }
+   }
+  }
+ },
+ "1f97429a-22b2-4b49-bbc1-035b76c161c4": {
+  "modificado": "2025-06-11T14:41:28.546109",
+  "arquivo": "2024-06-17.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5569
+    },
+    {
+     "aba": "CAPAG Ano Base 2023",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2022",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 88 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 48 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 49 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 83 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 84 nota 3"
+    }
+   }
+  }
+ },
+ "30c5fc20-634d-4558-9d45-01645b501deb": {
+  "modificado": "2025-06-11T14:41:17.644682",
+  "arquivo": "2024-10-15.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5569,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5569
+    },
+    {
+     "aba": "CAPAG Ano Base 2023",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2022",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 88 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 48 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 49 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 83 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 84 nota 3"
+    }
+   }
+  }
+ },
+ "986ec09d-f867-40e2-a466-0f525217df20": {
+  "modificado": "2025-02-19T18:42:41.021632",
+  "arquivo": "2025-02-19.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5568,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5568
+    },
+    {
+     "aba": "CAPAG Ano Base 2024",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2023",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 95 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 49 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 50 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 88 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 89 nota 3"
+    }
+   }
+  }
+ },
+ "f0d70b57-31b7-44f7-85ca-ec479131208a": {
+  "modificado": "2025-06-11T14:39:48.233597",
+  "arquivo": "2025-06-10.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5568,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5568
+    },
+    {
+     "aba": "CAPAG Ano Base 2024",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2023",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 95 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 49 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 50 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 88 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 89 nota 3"
+    }
+   }
+  }
+ },
+ "046f7fcf-a742-4787-9768-dbb10747d55d": {
+  "modificado": "2025-11-10T21:07:58.632085",
+  "arquivo": "2025-11-09.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5568,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5568
+    },
+    {
+     "aba": "CAPAG Ano Base 2024",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2023",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 95 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 49 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 50 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 88 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 89 nota 3"
+    }
+   }
+  }
+ },
+ "f117161f-44c4-4ada-9cfe-0d5da8c5b10e": {
+  "modificado": "2026-06-18T14:23:55.482869",
+  "arquivo": "2026-06-01.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5568,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5568
+    },
+    {
+     "aba": "CAPAG Ano Base 2024",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2025",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 95 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 49 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 50 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 88 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 89 nota 3"
+    }
+   }
+  }
+ },
+ "bc219a6d-e917-4e10-8dda-784ad4810abe": {
+  "modificado": "2026-09-15T21:37:20.911087",
+  "arquivo": "2026-09-01.json",
+  "layout": {
+   "aba": "Prévia da CAPAG",
+   "linhas": 5568,
+   "abas": [
+    {
+     "aba": "Prévia da CAPAG",
+     "com_nota": true,
+     "linhas": 5568
+    },
+    {
+     "aba": "CAPAG Ano Base 2024",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "CAPAG Ano Base 2025",
+     "com_nota": true,
+     "linhas": 5567
+    },
+    {
+     "aba": "Datalake",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "DCA_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RGF_Penultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "RREO_Ultimo_Exercicio",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "ChavesBusca",
+     "com_nota": false,
+     "linhas": 0
+    },
+    {
+     "aba": "Ranking",
+     "com_nota": true,
+     "linhas": 5568
+    }
+   ],
+   "escala_original": {
+    "endividamento": "fracao",
+    "poupanca_corrente": "fracao",
+    "liquidez": "fracao"
+   },
+   "colunas": {
+    "codigo_ibge": {
+     "indice": 0,
+     "cabecalho": "codigo municipio completo"
+    },
+    "capag": {
+     "indice": 3,
+     "cabecalho": "70 95 capag"
+    },
+    "endividamento": {
+     "indice": 4,
+     "cabecalho": "6 10 indicador 1"
+    },
+    "nota_endividamento": {
+     "indice": 5,
+     "cabecalho": "7 11 nota 1"
+    },
+    "poupanca_corrente": {
+     "indice": 6,
+     "cabecalho": "35 49 indicador 2"
+    },
+    "nota_poupanca_corrente": {
+     "indice": 7,
+     "cabecalho": "37 50 nota 2"
+    },
+    "liquidez": {
+     "indice": 8,
+     "cabecalho": "64 88 indicador 3"
+    },
+    "nota_liquidez": {
+     "indice": 9,
+     "cabecalho": "67 89 nota 3"
+    }
+   }
+  }
+ }
+}
