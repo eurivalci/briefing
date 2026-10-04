@@ -28,6 +28,7 @@ prefeitos.html                   listagem nacional: filtros, resumo e exportaç�
 etl/build_prefeitos.py           TSE → JSON por UF, chave = código IBGE
 etl/fotos_prefeitos.py           fotos oficiais do TSE → WebP 240×300
 etl/enriquecer_municipios.py     IBGE + Wikidata para todos os municípios → data/municipios/municipios.json
+etl/capag.py                     CAPAG do Tesouro → data/capag/<uf>.json (só para o briefing; licença ODbL)
 etl/consolidar_prefeitos.py      consolidado nacional → todos.json e todos.csv
 etl/municipios_brasileiros_tse.csv  de-para IBGE↔TSE (5.570 linhas)
 data/prefeitos/<uf>.json         gerado pelo ETL
@@ -101,6 +102,18 @@ const mulheresNoCeara = registros.filter(p => p.uf === "CE" && p.genero === "Fem
 ```
 
 A página `prefeitos.html` exporta o recorte filtrado no mesmo esquema, em CSV ou JSON, e o filtro fica no endereço da página para compartilhar. O CSV neutraliza injeção de fórmula (valores iniciados por `=`, `+`, `-` ou `@` ganham um apóstrofo).
+
+## Situação fiscal (Fase 2)
+
+**CAPAG.** Não existe API da CAPAG: a fonte é a planilha de cada posição no portal de dados do Tesouro. O ETL descobre as posições pela API do portal (sem URL fixa), baixa só as novas ou republicadas e reconhece as colunas pelo **conteúdo**, porque o layout muda entre anos e os metadados oficiais estão vazios. O código IBGE é a coluna de 7 dígitos que bate com o cadastro (aceita o código antigo de 6). A nota final é a coluna de notas com "CAPAG" no cabeçalho; sem isso, vence a que tem A+/B+ ou D, que só ela tem. Os indicadores são identificados por palavra inteira ("Indicador II" não casa com "Indicador I"). A escala de cada indicador é decidida pela mediana da coluna e tudo é gravado como fração. A nota não é recalculada: a metodologia mudou ao longo do período. As posições de 2018 a 2020 estão com 0 bytes no portal e são ignoradas.
+
+O log do passo "CAPAG" mostra, para cada posição, qual cabeçalho foi lido como qual campo. Se o Tesouro mudar o layout, é ali que aparece.
+
+**Licença.** A CAPAG é publicada sob ODbL. Por decisão do produto, ela aparece só no briefing e **não** entra no `todos.json` nem nas exportações. Os arquivos `data/capag/<uf>.json` levam o aviso de licença e a atribuição ao Tesouro, e o Vercel não libera CORS para eles.
+
+**SICONFI (ao vivo).** O briefing consulta o extrato de entregas do município, localiza o último RGF do **Executivo** (o RGF da Câmara tem outro limite e é ignorado) e lê o Anexo 1 (despesa com pessoal ÷ RCL, limites de 48,6%, 51,3% e 54%) e o Anexo 2 (dívida consolidada líquida ÷ RCL, limite de 120%). Se a linha publicada em percentual não for encontrada, o valor é calculado a partir das linhas em reais, e a origem do número aparece na tela. Se nada for reconhecido, aparece "linha não identificada", nunca um número inventado. O botão **"Ver dados brutos"** mostra as linhas recebidas, para diagnóstico.
+
+Os rótulos de linha do RGF não puderam ser conferidos contra a API real durante o desenvolvimento. Se algum município mostrar "linha não identificada", um print dos dados brutos basta para ajustar a leitura. O RREO (saúde, educação, resultado primário) fica para a próxima rodada, depois dessa conferência.
 
 ## Decisões de projeto
 

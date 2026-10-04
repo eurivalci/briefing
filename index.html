@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org; connect-src 'self' https://servicodados.ibge.gov.br https://query.wikidata.org https://pt.wikipedia.org; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org; connect-src 'self' https://servicodados.ibge.gov.br https://query.wikidata.org https://pt.wikipedia.org https://apidatalake.tesouro.gov.br; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Briefing Municipal — EDP Sistemas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -126,6 +126,31 @@ table.src th{color:var(--muted); font-weight:500; font-size:13px}
 .timeline .meta{color:var(--muted); font-size:14px}
 
 .prose{font:400 16px/1.7 var(--serif); max-width:72ch; margin:0}
+.fisc{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px}
+.card{border:1px solid var(--line); border-radius:var(--r-md); padding:16px; background:var(--surface)}
+.card h4{font:600 15px/1.3 var(--sans); margin:0 0 12px; color:var(--muted)}
+.nota-capag{display:flex; align-items:baseline; gap:14px; margin-bottom:10px}
+.nota-capag .letra{font:700 46px/1 var(--serif); color:var(--brass)}
+.nota-capag.ok .letra{color:var(--ok)} .nota-capag.warn .letra{color:var(--warn)}
+.nota-capag .sub{color:var(--muted); font-size:13px}
+.traj{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+.traj span{font-size:12px; border:1px solid var(--line); border-radius:var(--r-sm); padding:2px 7px; font-variant-numeric:tabular-nums}
+.traj b{color:var(--text)}
+.medidor{margin:6px 0 14px}
+.medidor .rot{display:flex; justify-content:space-between; font-size:13px}
+.medidor .rot b{font:700 20px var(--serif); font-variant-numeric:tabular-nums}
+.medidor .trilho{position:relative; height:10px; border-radius:5px; background:var(--line-soft); margin-top:6px; overflow:hidden}
+.medidor .enchido{position:absolute; left:0; top:0; bottom:0; border-radius:5px; background:var(--ok)}
+.medidor.m-acima .enchido{background:var(--warn)} .medidor.m-alerta .enchido{background:var(--brass)}
+.medidor.m-acima .rot b{color:var(--warn)}
+.kv dt .def{display:block; font-size:12px; color:var(--faint); line-height:1.3}
+.card .kv{grid-template-columns:minmax(0,1fr) auto}
+.card .kv dd{white-space:nowrap; text-align:right}
+.medidor .marca{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--muted)}
+.medidor .leg{font-size:12px; color:var(--faint); margin-top:4px}
+details.brutos{margin-top:12px; font-size:12.5px}
+details.brutos summary{cursor:pointer; color:var(--muted)}
+details.brutos pre{max-height:280px; overflow:auto; background:var(--ink); border:1px solid var(--line-soft); border-radius:var(--r-md); padding:8px; font:11.5px/1.45 ui-monospace,Menlo,monospace; white-space:pre}
 .attrib{font-size:12px; color:var(--faint); margin-top:6px}
 
 .skel{height:14px; border-radius:var(--r-sm); background:linear-gradient(90deg,var(--raise),var(--line-soft),var(--raise)); background-size:200% 100%; animation:sh 1.3s linear infinite; margin:6px 0}
@@ -206,7 +231,9 @@ table.src th{color:var(--muted); font-weight:500; font-size:13px}
 const CONFIG = {
   // Arquivos gerados por etl/build_prefeitos.py. Ajuste se publicar em outro caminho.
   tseUrl: (uf) => `./data/prefeitos/${uf.toLowerCase()}.json`,
-  fotoBase: "./data/",  // prefeito.foto vem como "fotos/<ibge>.webp?v=<sq>" 
+  fotoBase: "./data/",  // prefeito.foto vem como "fotos/<ibge>.webp?v=<sq>"
+  capagUrl: (uf) => `./data/capag/${uf.toLowerCase()}.json`,
+  siconfi: "https://apidatalake.tesouro.gov.br/ords/siconfi/tt",
   ibge: "https://servicodados.ibge.gov.br/api/v1",
   wikidata: "https://query.wikidata.org/sparql",
   wikipedia: "https://pt.wikipedia.org/api/rest_v1/page/summary/",
@@ -411,6 +438,50 @@ const Fontes = {
     return {extrato: d?.extract || "", url: d?.content_urls?.desktop?.page || u, titulo: d?.title || pagina};
   },
 
+  async capag(uf, cod) {
+    const d = await fetchJSON(CONFIG.capagUrl(uf), {retries: 0, timeout: 15000});
+    return {trajetoria: (d.municipios || {})[cod] || null, posicoes: d.posicoes || [], aviso: d.aviso, licenca: d.licenca,
+      fonte: d.fonte, gerado_em: d.gerado_em};
+  },
+
+  /** SICONFI ao vivo: extrato de entregas e RGF (pessoal e dívida) do último período entregue. */
+  async siconfi(cod) {
+    const ano = new Date().getFullYear();
+    const ords = async (rota, params) => {
+      const q = new URLSearchParams(params).toString();
+      const d = await fetchJSON(`${CONFIG.siconfi}/${rota}?${q}`, {timeout: 20000});
+      return Array.isArray(d?.items) ? d.items : [];
+    };
+    const [atual, anterior] = await Promise.allSettled([
+      ords("extrato_entregas", {id_ente: cod, an_referencia: ano}),
+      ords("extrato_entregas", {id_ente: cod, an_referencia: ano - 1}),
+    ]);
+    const extrato = [...(atual.value || []), ...(anterior.value || [])];
+    const out = {extrato, ano, rgf: null, pessoal: null, dcl: null, brutos: {}};
+    if (atual.status === "rejected" && anterior.status === "rejected") throw atual.reason;
+    const rgfs = extrato.filter(i => /gest[aã]o fiscal|\brgf\b/i.test(campo(i, CAMPOS.entregavel)) && !/c[aâ]mara|legislativ/i.test(campo(i, CAMPOS.instituicao)))
+      .sort((a, b) => (+campo(b, CAMPOS.exercicio) - +campo(a, CAMPOS.exercicio)) || (+campo(b, CAMPOS.periodo) - +campo(a, CAMPOS.periodo)));
+    const alvo = rgfs[0];
+    if (!alvo) return out;
+    const per = String(campo(alvo, CAMPOS.periodicidade) || "Q").toUpperCase().startsWith("S") ? "S" : "Q";
+    const base = {an_exercicio: campo(alvo, CAMPOS.exercicio), in_periodicidade: per, nr_periodo: campo(alvo, CAMPOS.periodo),
+      co_esfera: "M", co_poder: "E", id_ente: cod};
+    out.rgf = {exercicio: base.an_exercicio, periodo: base.nr_periodo, periodicidade: per};
+    for (const tipo of ["RGF", "RGF Simplificado"]) {
+      const [a1, a2] = await Promise.allSettled([
+        ords("rgf", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RGF-Anexo 01"}),
+        ords("rgf", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RGF-Anexo 02"}),
+      ]);
+      const i1 = a1.value || [], i2 = a2.value || [];
+      if (i1.length || i2.length) {
+        out.rgf.tipo = tipo; out.brutos.anexo01 = i1; out.brutos.anexo02 = i2;
+        out.pessoal = lerPessoal(i1); out.dcl = lerDCL(i2);
+        break;
+      }
+    }
+    return out;
+  },
+
   tseUF: {},  // dados importados manualmente ficam aqui
   async tse(uf) {
     if (this.tseUF[uf]) return this.tseUF[uf];
@@ -452,9 +523,57 @@ function parseWikidata(rows) {
   return out;
 }
 
+/* ================================================================ leitura do SICONFI */
+// A API não documenta o nome exato de todos os campos; aceitamos as variantes conhecidas.
+const CAMPOS = {
+  entregavel: ["entregavel", "no_entregavel", "tipo_entregavel", "declaracao", "relatorio"],
+  instituicao: ["instituicao", "no_instituicao", "poder"],
+  exercicio: ["exercicio", "an_exercicio", "an_referencia"],
+  periodo: ["periodo", "nr_periodo"],
+  periodicidade: ["periodicidade", "in_periodicidade"],
+  status: ["status_relatorio", "status", "situacao"],
+  data: ["data_status", "dt_status", "data_envio", "dt_envio", "data"],
+};
+function campo(item, nomes) { for (const n of nomes) if (item && item[n] != null && item[n] !== "") return item[n]; return null; }
+const up = (s) => semAcento(s).toUpperCase();
+const cc = (s) => semAcento(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+// vazio é AUSÊNCIA, não zero: Number("") e Number(null) valem 0 em JavaScript
+const num = (v) => {
+  if (v == null || (typeof v === "string" && v.trim() === "")) return null;
+  const n = typeof v === "number" ? v : Number(String(v).replace(",", "."));
+  return isFinite(n) ? n : null;
+};
+
+function lerPessoal(items) {
+  const dtp = (i) => (cc(i.cod_conta).includes("despesatotalcompessoal") || /DESPESA TOTAL COM PESSOAL/.test(up(i.conta))) && !/LIMITE/.test(up(i.conta));
+  const rclAj = (i) => cc(i.cod_conta).includes("receitacorrenteliquidaajustada") || /RECEITA CORRENTE LIQUIDA AJUSTADA/.test(up(i.conta));
+  const pct = items.find(i => dtp(i) && /%|SOBRE A RCL/.test(up(i.coluna)) && num(i.valor) != null);
+  const valor = items.find(i => dtp(i) && !/%/.test(up(i.coluna)) && num(i.valor) != null);
+  const rcl = items.find(i => rclAj(i) && !/%/.test(up(i.coluna)) && num(i.valor) != null);
+  let p = pct ? num(pct.valor) : null, origem = "publicado";
+  if (p != null && p > 0 && p <= 1.5) p *= 100;              // fração publicada como 0,48
+  if (p == null && valor && rcl && num(rcl.valor)) { p = 100 * num(valor.valor) / num(rcl.valor); origem = "calculado (DTP ÷ RCL ajustada)"; }
+  if (p == null) return {reconhecido: false};
+  return {reconhecido: true, pct: p, origem, dtp: valor ? num(valor.valor) : null, rcl: rcl ? num(rcl.valor) : null};
+}
+
+function lerDCL(items) {
+  const linhaPct = (i) => cc(i.cod_conta).includes("dclsobrercl") || /% DA DCL SOBRE A RCL|DCL SOBRE A RCL/.test(up(i.conta));
+  const linhaDcl = (i) => cc(i.cod_conta).includes("dividaconsolidadaliquida") || /DIVIDA CONSOLIDADA LIQUIDA/.test(up(i.conta)) && !/%/.test(up(i.conta));
+  const linhaRcl = (i) => /RECEITA CORRENTE LIQUIDA AJUSTADA/.test(up(i.conta)) || cc(i.cod_conta).includes("receitacorrenteliquidaajustada");
+  const ordem = (col) => { const m = up(col).match(/(\d)\s*[ºO°]?\s*(QUADRIMESTRE|SEMESTRE)/); return m ? +m[1] : (/EXERCICIO ANTERIOR/.test(up(col)) ? -1 : 0); };
+  const ultimo = (pred) => items.filter(i => pred(i) && num(i.valor) != null && ordem(i.coluna) >= 0)
+    .sort((a, b) => ordem(b.coluna) - ordem(a.coluna))[0];
+  const pct = ultimo(linhaPct);
+  if (pct) return {reconhecido: true, pct: num(pct.valor), coluna: pct.coluna, origem: "publicado"};
+  const dcl = ultimo(linhaDcl), rcl = dcl && items.find(i => linhaRcl(i) && i.coluna === dcl.coluna && num(i.valor));
+  if (dcl && rcl) return {reconhecido: true, pct: 100 * num(dcl.valor) / num(rcl.valor), coluna: dcl.coluna, origem: "calculado (DCL ÷ RCL ajustada)"};
+  return {reconhecido: false};
+}
+
 /* ================================================================ estado */
 const S = {uf: null, municipios: [], filtro: [], ativo: -1, cod: null, token: 0, secoes: {}};
-const SECOES = ["local", "ind", "ibge", "wd", "tse", "wpMun", "wpPref"];
+const SECOES = ["local", "ind", "ibge", "wd", "tse", "capag", "siconfi", "wpMun", "wpPref"];
 
 function definirSecao(nome, patch, token) {
   if (token !== S.token) return;  // resposta de um município anterior: descarta
@@ -479,6 +598,11 @@ async function abrirMunicipio(uf, cod) {
   const pWd = carregar("wd", token, () => Fontes.wikidata(cod));
   carregar("local", token, () => Fontes.localidade(cod));
   carregar("ind", token, () => Fontes.indicadores(cod));
+  if (uf === "DF") { definirSecao("capag", {status: "vazio"}, token); definirSecao("siconfi", {status: "vazio"}, token); }
+  else {
+    carregar("capag", token, () => Fontes.capag(uf, cod));
+    carregar("siconfi", token, () => Fontes.siconfi(cod));
+  }
   carregar("ibge", token, () => Fontes.ibgePrefeito(cod));
   if (uf === "DF") definirSecao("tse", {status: "vazio"}, token);
   else carregar("tse", token, async () => {
@@ -561,6 +685,7 @@ function montarDoc() {
     <section class="block" aria-labelledby="h-gov"><h3 id="h-gov">Quem governa</h3><div id="s-gov"></div></section>
     <section class="block" aria-labelledby="h-mand"><h3 id="h-mand">Situação do mandato</h3><div id="s-mand"></div></section>
     <section class="block" aria-labelledby="h-ind"><h3 id="h-ind">Indicadores do município</h3><div id="s-ind"></div></section>
+    <section class="block" aria-labelledby="h-fisc"><h3 id="h-fisc">Situação fiscal</h3><div id="s-fisc"></div></section>
     <section class="block" aria-labelledby="h-traj"><h3 id="h-traj">Trajetória do prefeito</h3><div id="s-traj"></div></section>
     <section class="block" aria-labelledby="h-sobre"><h3 id="h-sobre">Sobre o município</h3><div id="s-sobre"></div></section>
     <section class="block" aria-labelledby="h-fontes"><h3 id="h-fontes">Fontes e proveniência</h3><div id="s-fontes"></div></section>`;
@@ -573,6 +698,7 @@ function render() {
   pintar("s-gov", rGov());
   pintar("s-mand", rMandato());
   pintar("s-ind", rInd());
+  pintar("s-fisc", rFiscal());
   pintar("s-traj", rTraj());
   pintar("s-sobre", rSobre());
   pintar("s-fontes", rFontes());
@@ -684,6 +810,99 @@ function rInd() {
   return `<div class="grid-ind">${cards}</div>${falta}`;
 }
 
+const fmtPct = (v, d = 1) => v == null ? "—" : `${fmtNum(v, d)}%`;
+const POS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const fmtPos = (p) => /^\d{4}-\d{2}/.test(p || "") ? `${POS_MES[+p.slice(5, 7) - 1]}/${p.slice(0, 4)}` : (p || "");
+
+function medidor(rotulo, v, faixas, maxEscala, legenda) {
+  if (v == null) return `<div class="medidor"><div class="rot"><span>${esc(rotulo)}</span><b>—</b></div></div>`;
+  // classes com prefixo próprio: "alerta" já é o banner de divergência do mandato
+  const alerta = faixas[0], limite = faixas[faixas.length - 1];
+  const cls = v > limite ? "m-acima" : v >= alerta ? "m-alerta" : "";
+  const pos = (x) => Math.max(0, Math.min(100, 100 * x / maxEscala));
+  return `<div class="medidor ${cls}"><div class="rot"><span>${esc(rotulo)}</span><b>${fmtPct(v)}</b></div>
+    <div class="trilho" role="img" aria-label="${esc(rotulo)}: ${fmtPct(v)}"><div class="enchido" style="width:${pos(v).toFixed(1)}%"></div>
+    ${faixas.map(f => `<span class="marca" style="left:${pos(f).toFixed(1)}%"></span>`).join("")}</div>
+    <div class="leg">${esc(legenda)}</div></div>`;
+}
+
+function rFiscal() {
+  if (S.uf === "DF") return `<p class="note">O Distrito Federal tem regime fiscal de estado; a seção municipal não se aplica.</p>`;
+  return `<div class="fisc">${rCapag()}${rSiconfi()}</div>`;
+}
+
+function rCapag() {
+  const s = S.secoes.capag;
+  if (!s || s.status === "carregando") return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4>${skel(4)}</div>`;
+  if (s.status === "erro") return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4>
+    <p class="note">Base da CAPAG indisponível (${esc(s.erro)}). Ela é gerada pelo ETL semanal.</p></div>`;
+  const d = s.dados, t = d.trajetoria;
+  if (!t || !t.length) return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4><p class="note">Município ausente nas posições publicadas pelo Tesouro.</p></div>`;
+  const u = t[t.length - 1];
+  const boa = u.capag && /^[AB]/.test(u.capag);
+  const linha = (nome, fr, nota, def) => `<dt>${esc(nome)}<span class="def">${esc(def)}</span></dt><dd>${fr != null ? fmtPct(100 * fr) : "—"}${nota ? ` <span class="party" style="margin-left:6px">${esc(nota)}</span>` : ""}</dd>`;
+  return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4>
+    <div class="nota-capag ${u.capag ? (boa ? "ok" : "warn") : ""}"><span class="letra">${esc(u.capag || "n.d.")}</span>
+      <span class="sub">posição de ${esc(fmtPos(u.posicao))} · ano-base ${esc(u.ano_base)}<br>
+      ${u.capag ? (boa ? "Em regra, elegível a operação de crédito com garantia da União." : "Em regra, não elegível a operação com garantia da União.")
+        : `Nota não calculada pelo Tesouro${u.capag_publicada ? ` (publicado: “${esc(u.capag_publicada)}”)` : ""}. Costuma indicar declaração obrigatória não homologada no SICONFI.`}</span></div>
+    <dl class="kv">
+      ${linha("Endividamento", u.endividamento, u.nota_endividamento, "dívida consolidada ÷ RCL")}
+      ${linha("Poupança corrente", u.poupanca_corrente, u.nota_poupanca_corrente, "despesa corrente ÷ receita corrente ajustada")}
+      ${linha("Liquidez", u.liquidez, u.nota_liquidez, "obrigações financeiras ÷ caixa")}
+      ${u.qualidade_informacao != null ? `<dt>Qualidade da informação<span class="def">ranking do Tesouro</span></dt><dd>${esc(u.qualidade_informacao)}</dd>` : ""}
+    </dl>
+    ${t.length > 1 ? `<div class="traj" aria-label="Trajetória da nota">${t.map(x => `<span title="ano-base ${esc(x.ano_base)}">${esc(fmtPos(x.posicao))} <b>${esc(x.capag || "n.d.")}</b></span>`).join("")}</div>` : ""}
+    <p class="attrib">${esc(d.aviso || "")} Fonte: Tesouro Nacional, dados sob licença ODbL.</p></div>`;
+}
+
+function rSiconfi() {
+  const s = S.secoes.siconfi, titulo_ = "LRF — último Relatório de Gestão Fiscal";
+  if (!s || s.status === "carregando") return `<div class="card"><h4>${titulo_}</h4>${skel(4)}</div>`;
+  if (s.status === "erro") return `<div class="card"><h4>${titulo_}</h4>${erroBox(`SICONFI indisponível (${s.erro}).`, "siconfi")}</div>`;
+  const d = s.dados;
+  const ent = rEntregas(d);
+  if (!d.rgf) return `<div class="card"><h4>${titulo_}</h4><p class="note">Nenhum RGF do Executivo encontrado no extrato de entregas de ${d.ano - 1}–${d.ano}.</p>${ent}${brutos(d)}</div>`;
+  const per = `${d.rgf.periodo}º ${d.rgf.periodicidade === "S" ? "semestre" : "quadrimestre"} de ${d.rgf.exercicio}`;
+  const naoLido = (o) => !o || !o.reconhecido;
+  return `<div class="card"><h4>${titulo_}</h4>
+    <p class="note" style="margin:-6px 0 10px">${esc(per)}${d.rgf.tipo ? ` · ${esc(d.rgf.tipo)}` : ""}</p>
+    ${naoLido(d.pessoal) ? `<p class="note">Despesa com pessoal: linha não identificada no RGF (veja os dados brutos).</p>`
+      : medidor("Despesa com pessoal / RCL", d.pessoal.pct, [48.6, 51.3, 54], 70, `alerta 48,6% · prudencial 51,3% · limite 54% (Executivo) · ${d.pessoal.origem}`)}
+    ${naoLido(d.dcl) ? `<p class="note">Dívida consolidada líquida: linha não identificada no RGF (veja os dados brutos).</p>`
+      : medidor("Dívida consolidada líquida / RCL", d.dcl.pct, [108, 120], 160, `alerta 108% · limite 120% (Res. Senado 40/2001) · ${d.dcl.origem}`)}
+    ${d.pessoal?.rcl ? `<p class="note">RCL ajustada: ${fmtBRL(d.pessoal.rcl)}</p>` : ""}
+    ${ent}${brutos(d)}
+    <p class="attrib">Fonte: SICONFI (Tesouro Nacional), consulta em tempo real.</p></div>`;
+}
+
+function rEntregas(d) {
+  const ult = new Map();
+  for (const i of d.extrato) {
+    const nome = String(campo(i, CAMPOS.entregavel) || "").trim(); if (!nome) continue;
+    const k = `${nome}|${campo(i, CAMPOS.exercicio)}`;
+    const atual = ult.get(k);
+    if (!atual || +campo(i, CAMPOS.periodo) > +campo(atual, CAMPOS.periodo)) ult.set(k, i);
+  }
+  const lin = [...ult.values()].sort((a, b) => +campo(b, CAMPOS.exercicio) - +campo(a, CAMPOS.exercicio)).slice(0, 8);
+  if (!lin.length) return "";
+  return `<details class="brutos"><summary>Entregas ao SICONFI (${lin.length})</summary><div class="tablewrap"><table class="src">
+    <thead><tr><th>Declaração</th><th>Exercício</th><th>Período</th><th>Situação</th></tr></thead><tbody>${lin.map(i => `<tr>
+    <td>${esc(campo(i, CAMPOS.entregavel))}</td><td>${esc(campo(i, CAMPOS.exercicio))}</td>
+    <td>${esc([campo(i, CAMPOS.periodo), campo(i, CAMPOS.periodicidade)].filter(Boolean).join(" "))}</td>
+    <td class="note">${esc([campo(i, CAMPOS.status), campo(i, CAMPOS.data) ? fmtData(String(campo(i, CAMPOS.data)).slice(0, 10)) : ""].filter(Boolean).join(" · "))}</td></tr>`).join("")}
+    </tbody></table></div></details>`;
+}
+
+function brutos(d) {
+  const amostra = (arr) => (arr || []).slice(0, 80).map(i => [i.anexo, i.cod_conta, i.conta, i.coluna, i.valor].map(x => String(x ?? "")).join(" | ")).join("\n");
+  const partes = [];
+  if (d.brutos?.anexo01?.length) partes.push(`RGF-Anexo 01 (${d.brutos.anexo01.length} linhas)\nanexo | cod_conta | conta | coluna | valor\n${amostra(d.brutos.anexo01)}`);
+  if (d.brutos?.anexo02?.length) partes.push(`RGF-Anexo 02 (${d.brutos.anexo02.length} linhas)\n${amostra(d.brutos.anexo02)}`);
+  if (d.extrato?.length) partes.push(`Extrato de entregas — campos: ${Object.keys(d.extrato[0]).join(", ")}`);
+  return partes.length ? `<details class="brutos"><summary>Ver dados brutos (diagnóstico)</summary><pre>${esc(partes.join("\n\n"))}</pre></details>` : "";
+}
+
 function rTraj() {
   const reg = S.secoes.tse?.dados?.registro, wp = S.secoes.wpPref;
   const partes = [];
@@ -726,6 +945,8 @@ const NOMES_FONTE = {
   wd: ["Wikidata", "Chefe de governo, site, foto"],
   wpMun: ["Wikipedia — município", "Resumo do verbete"],
   wpPref: ["Wikipedia — prefeito", "Resumo do verbete"],
+  capag: ["Tesouro — CAPAG (via ETL)", "Capacidade de pagamento e trajetória"],
+  siconfi: ["SICONFI — Tesouro Nacional", "RGF (pessoal e dívida) e entregas"],
 };
 function rFontes() {
   const linhas = SECOES.map(k => {
@@ -737,6 +958,8 @@ function rFontes() {
     else tag = `<span class="tag info">consultando</span>`;
     let det = s.status === "erro" ? esc(s.erro) : "";
     if (k === "tse" && s.dados?.gerado_em) det = `Base gerada em ${esc(fmtData(s.dados.gerado_em))}`;
+    if (k === "capag" && s.dados?.posicoes?.length) det = `Posição de ${esc(fmtPos(s.dados.posicoes[s.dados.posicoes.length - 1].posicao))} · licença ODbL`;
+    if (k === "siconfi" && s.dados?.rgf) det = `RGF ${esc(s.dados.rgf.periodo)}º ${s.dados.rgf.periodicidade === "S" ? "sem." : "quad."} ${esc(s.dados.rgf.exercicio)}`;
     if (k === "ind" && s.dados?.faltaram) det = `${s.dados.faltaram} indicador(es) sem resposta`;
     return `<tr><td>${esc(nome)}</td><td class="note">${esc(uso)}</td><td>${tag}</td><td class="note">${det}</td></tr>`;
   }).join("");
@@ -762,6 +985,14 @@ function markdown() {
   for (const l of r.linhas) L.push(`- ${l.fonte}: ${l.nome} — ${l.ref}${l.confere === false ? " (DIVERGE)" : ""}`);
   const ind = S.secoes.ind?.dados?.itens || [];
   if (ind.length) { L.push("", "## Indicadores", ""); for (const i of ind) L.push(`- ${i.lbl}: ${i.pre ? i.unit + " " : ""}${fmtNum(i.valor, i.dec)}${i.pre ? "" : " " + i.unit} (${i.ano})`); }
+  const cp = S.secoes.capag?.dados?.trajetoria, sc = S.secoes.siconfi?.dados;
+  if ((cp && cp.length) || sc?.rgf) {
+    L.push("", "## Situação fiscal", "");
+    if (cp && cp.length) { const u = cp[cp.length - 1];
+      L.push(`- CAPAG: ${u.capag || "não calculada"} (posição ${fmtPos(u.posicao)}, ano-base ${u.ano_base}) — fonte: Tesouro Nacional, ODbL`); }
+    if (sc?.pessoal?.reconhecido) L.push(`- Despesa com pessoal: ${fmtPct(sc.pessoal.pct)} da RCL (limite 54%) — RGF ${sc.rgf.periodo}º ${sc.rgf.periodicidade === "S" ? "semestre" : "quadrimestre"}/${sc.rgf.exercicio}`);
+    if (sc?.dcl?.reconhecido) L.push(`- Dívida consolidada líquida: ${fmtPct(sc.dcl.pct)} da RCL (limite 120%)`);
+  }
   const wp = S.secoes.wpMun?.dados;
   if (wp?.extrato) L.push("", "## Sobre o município", "", wp.extrato, "", `Fonte: ${wp.url} (CC BY-SA)`);
   L.push("", "---", "Fontes: IBGE, TSE (dados abertos), Wikidata, Wikipedia.");
@@ -855,7 +1086,8 @@ function ligarEventos() {
     else if (t.dataset.retry) {
       const sec = t.dataset.retry, cod = S.cod, token = S.token;
       for (const k of [...cache.keys()]) if (k.includes(cod)) cache.delete(k);
-      const fn = {ind: () => Fontes.indicadores(cod), wpMun: () => Fontes.wikipedia(S.secoes.wd?.dados?.artigo)}[sec];
+      const fn = {ind: () => Fontes.indicadores(cod), wpMun: () => Fontes.wikipedia(S.secoes.wd?.dados?.artigo),
+        siconfi: () => Fontes.siconfi(cod)}[sec];
       if (fn) carregar(sec, token, fn);
     }
   });
@@ -892,7 +1124,7 @@ function lerHash() {
 }
 
 /* ================================================================ testes expostos (sem efeito em produção) */
-window.__BM__ = {limparCache: () => cache.clear(), fotoTSE, nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
+window.__BM__ = {limparCache: () => cache.clear(), fotoTSE, lerPessoal, lerDCL, nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
 
 montarMapa();
 ligarEventos();
