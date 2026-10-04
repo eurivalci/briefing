@@ -42,6 +42,11 @@ UA = {"User-Agent": "BriefingMunicipal-ETL/1.0 (EDP Sistemas; dados publicos)", 
 NOTAS_FINAIS = {"A+", "A", "B+", "B", "C", "D"}
 NAO_CALCULADA = {"N.D.", "ND", "N/D", "N.E.", "NE", "NAO CALCULADA", "NÃO CALCULADA", "-", "N.A.", "NA", "*"}
 NOTAS_IND = {"A", "B", "C"}
+# A UF está no próprio código IBGE (dois primeiros dígitos): não depende de cadastro externo
+UF_POR_PREFIXO = {"11": "RO", "12": "AC", "13": "AM", "14": "RR", "15": "PA", "16": "AP", "17": "TO", "21": "MA",
+                  "22": "PI", "23": "CE", "24": "RN", "25": "PB", "26": "PE", "27": "AL", "28": "SE", "29": "BA",
+                  "31": "MG", "32": "ES", "33": "RJ", "35": "SP", "41": "PR", "42": "SC", "43": "RS", "50": "MS",
+                  "51": "MT", "52": "GO", "53": "DF"}
 MESES = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6, "jul": 7, "ago": 8, "set": 9, "out": 10,
          "nov": 11, "dez": 12}
 
@@ -316,7 +321,9 @@ def main(argv=None):
     (dest / "posicoes").mkdir(parents=True, exist_ok=True)
     muns = json.loads(Path(args.municipios).read_text(encoding="utf-8"))["municipios"] if Path(args.municipios).exists() else {}
     validos = set(muns)
-    uf_de = {c: m.get("uf") for c, m in muns.items()}
+    if not validos:
+        print("[capag] aviso: cadastro de municípios ausente; aceitando qualquer código de 7 dígitos com UF válida",
+              file=sys.stderr)
     arq_cache = dest / "_posicoes.json"
     cache = json.loads(arq_cache.read_text(encoding="utf-8")) if arq_cache.exists() else {}
 
@@ -372,7 +379,7 @@ def main(argv=None):
     por_uf = defaultdict(dict)
     for d in docs:
         for cod, reg in d["municipios"].items():
-            uf = uf_de.get(cod)
+            uf = UF_POR_PREFIXO.get(cod[:2])
             if not uf:
                 continue
             por_uf[uf].setdefault(cod, []).append({"posicao": d["data"] or str(d["ano_capag"]), "ano_capag": d["ano_capag"],
@@ -394,12 +401,18 @@ def main(argv=None):
         tmp.write_text(json.dumps({**cabecalho, "uf": uf, "municipios": dict(sorted(mm.items()))},
                                   ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         tmp.replace(arq)
+    relatorio["arquivos_por_uf"] = sorted(por_uf)
     (dest / "_auditoria.json").write_text(json.dumps({"gerado_em": agora, **relatorio}, ensure_ascii=False, indent=1),
                                           encoding="utf-8")
+    if not por_uf:
+        # antes: terminava com "OK" sem gravar nada, e o briefing via 404 sem pista do motivo
+        raise SystemExit(f"nenhum arquivo por UF gravado: {sum(len(d['municipios']) for d in docs)} registros lidos, "
+                         "nenhum com código IBGE de UF reconhecida")
     ult = docs[-1]
     print(f"OK: {len(posicoes)} posições no portal; {len(relatorio['processadas'])} processadas, "
           f"{len(relatorio['reaproveitadas'])} reaproveitadas, {len(relatorio['ignoradas'])} ignoradas, "
-          f"{len(relatorio['falhas'])} com falha. Mais recente: {ult['posicao']} ({len(ult['municipios'])} municípios)")
+          f"{len(relatorio['falhas'])} com falha. Mais recente: {ult['posicao']} ({len(ult['municipios'])} municípios). "
+          f"Arquivos gravados: {len(por_uf)} UFs em {dest}")
     if relatorio["falhas"] and not relatorio["processadas"] and not relatorio["reaproveitadas"]:
         return 1
     return 0
