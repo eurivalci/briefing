@@ -11,175 +11,211 @@
 <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#10171f; --surface:#17212b; --raise:#1d2935; --line:#2b3947; --line-soft:#223040;
-  --text:#e8e3d8; --muted:#93a1ae; --faint:#66768a;
-  --brass:#c8a35a; --brass-soft:rgba(200,163,90,.14);
-  --ok:#6fb8a6; --ok-soft:rgba(111,184,166,.13);
-  --warn:#e2826a; --warn-soft:rgba(226,130,106,.13);
-  --info:#7c93ad; --info-soft:rgba(124,147,173,.14);
+  /* ardósia, osso e latão: a paleta da marca, com o latão reservado ao selo e às notas */
+  --ink:#12181f; --sheet:#151c24; --surface:#18202a; --raise:#1f2833; --line:#2a3542; --line-soft:#212b36;
+  --text:#e9e5dc; --muted:#9aa6b2; --faint:#6b7a8b;
+  --brass:#c9a55c; --brass-soft:rgba(201,165,92,.14);
+  --ok:#6db6a3; --ok-soft:rgba(109,182,163,.13);
+  --warn:#de8467; --warn-soft:rgba(222,132,103,.13);
+  --info:#7f97b0; --info-soft:rgba(127,151,176,.14);
   --serif:"Literata", Georgia, "Times New Roman", serif;
   --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --r-sm:4px; --r-md:8px;
+  /* raio por nível de hierarquia, não um raio para tudo */
+  --r-chip:6px; --r-sm:6px; --r-md:10px; --r-panel:12px; --r-hero:18px;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0; min-height:100%; background:var(--ink); color:var(--text); font:15px/1.55 var(--sans); -webkit-font-smoothing:antialiased}
-a{color:var(--brass); text-underline-offset:3px}
-a:hover{color:#dfbd77}
+a{color:var(--brass); text-underline-offset:3px; text-decoration-thickness:1px}
+a:hover{color:#e0c07c}
 button{font:inherit; color:inherit}
-:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:var(--r-sm)}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:var(--r-chip)}
 .sr{position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
 
-/* ---------- shell ---------- */
-.app{display:grid; grid-template-columns:330px minmax(0,1fr); min-height:100vh}
-.rail{border-right:1px solid var(--line); background:var(--surface); padding:22px 20px; position:sticky; top:0; height:100vh; overflow:auto; display:flex; flex-direction:column; gap:20px}
+/* ---------- moldura ---------- */
+.app{display:grid; grid-template-columns:316px minmax(0,1fr); min-height:100vh}
+.rail{border-right:1px solid var(--line-soft); background:var(--sheet); padding:24px 20px; position:sticky; top:0; height:100vh; overflow:auto; display:flex; flex-direction:column; gap:22px}
 .brand{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
-.brand h1{font:600 19px/1.2 var(--serif); margin:0; letter-spacing:.005em}
+.brand h1{font:600 19px/1.2 var(--serif); margin:0}
 .brand small{color:var(--faint); font-size:12px}
 .step-label{font-size:13px; color:var(--muted); margin:0 0 8px; font-weight:500}
-
-/* mapa de UFs em grade geográfica: o elemento memorável da interface */
-.ufmap{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; max-width:290px}
-.uf{aspect-ratio:1; border:1px solid var(--line); background:var(--raise); border-radius:var(--r-sm); font:600 12px/1 var(--sans); letter-spacing:.02em; cursor:pointer; display:grid; place-items:center; color:var(--muted); transition:background .15s, color .15s, border-color .15s}
+.ufmap{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; max-width:276px}
+.uf{aspect-ratio:1; border:1px solid var(--line-soft); background:var(--surface); border-radius:var(--r-chip); font:600 11.5px/1 var(--sans); cursor:pointer; display:grid; place-items:center; color:var(--muted); transition:background .15s, color .15s, border-color .15s}
 .uf:hover{border-color:var(--brass); color:var(--text)}
-.uf[aria-pressed="true"]{background:var(--brass); border-color:var(--brass); color:#1a1408}
+.uf[aria-pressed="true"]{background:var(--brass); border-color:var(--brass); color:#1b1508}
 .ufname{min-height:20px; margin-top:8px; font:600 15px/1.3 var(--serif)}
-
 .search{position:relative}
 .search input{width:100%; background:var(--ink); border:1px solid var(--line); color:var(--text); border-radius:var(--r-md); padding:10px 12px; font:inherit}
 .search input:disabled{opacity:.5}
 .search input::placeholder{color:var(--faint)}
-.munlist{list-style:none; margin:8px 0 0; padding:0; border:1px solid var(--line-soft); border-radius:var(--r-md); max-height:42vh; overflow:auto; background:var(--ink)}
+.munlist{list-style:none; margin:8px 0 0; padding:4px; border:1px solid var(--line-soft); border-radius:var(--r-md); max-height:42vh; overflow:auto; background:var(--ink)}
 .munlist:empty{display:none}
-.munlist li{padding:7px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; border-bottom:1px solid var(--line-soft)}
-.munlist li:last-child{border-bottom:0}
+.munlist li{padding:7px 10px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; border-radius:var(--r-chip)}
 .munlist li[aria-selected="true"], .munlist li:hover{background:var(--raise)}
 .munlist li .cod{color:var(--faint); font-size:12px; font-variant-numeric:tabular-nums}
 .count{font-size:12px; color:var(--faint); margin-top:6px}
 .rail-foot{margin-top:auto; font-size:12px; color:var(--faint); line-height:1.5}
 .rail-foot label{color:var(--brass); cursor:pointer; text-decoration:underline; text-underline-offset:3px}
 
-/* ---------- briefing ---------- */
-main{padding:36px clamp(20px,4vw,56px) 80px; min-width:0}
-.doc{max-width:880px}
+/* ---------- documento ---------- */
+main{padding:32px clamp(18px,3.5vw,48px) 80px; min-width:0}
+.doc{max-width:1040px}
 .empty{max-width:560px; margin-top:12vh}
 .empty h2{font:600 30px/1.2 var(--serif); margin:0 0 12px}
 .empty p{color:var(--muted); margin:0 0 10px}
-.toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px}
-.btn{background:var(--raise); border:1px solid var(--line); border-radius:var(--r-md); padding:7px 13px; cursor:pointer; font-size:13px; font-weight:500}
-.btn:hover{border-color:var(--brass)}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-bottom:18px}
+.btn{background:transparent; border:1px solid var(--line); border-radius:var(--r-md); padding:7px 13px; cursor:pointer; font-size:13px; font-weight:500; color:var(--muted)}
+.btn:hover{border-color:var(--brass); color:var(--text)}
 .btn.small{padding:4px 10px; font-size:12px}
 
-.mun-head{border-bottom:1px solid var(--line); padding-bottom:22px; margin-bottom:28px}
-.mun-head .where{color:var(--muted); font-size:14px; margin:0 0 6px}
-.mun-head h2{font:700 clamp(32px,5vw,48px)/1.05 var(--serif); margin:0 0 10px; letter-spacing:-.01em}
+.mun-head{margin:0 0 18px}
+.mun-head .where{color:var(--muted); font-size:14px; margin:0 0 4px}
+.mun-head h2{font:700 clamp(30px,4.4vw,44px)/1.05 var(--serif); margin:0 0 8px; letter-spacing:-.012em}
 .mun-head .facts{color:var(--muted); margin:0}
-.links{display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:12px; font-size:14px}
+.links{display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:10px; font-size:14px}
 
+/* topo: o único bloco com destaque — retrato, selo e indicadores-chave */
+.hero{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-hero); padding:26px 28px 0; margin:0 0 20px}
+.hero-main{display:grid; grid-template-columns:minmax(0,1fr) 196px; gap:28px; align-items:start; padding-bottom:22px}
+.selo-box{display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center}
+.selo{width:148px; height:148px}
+.selo .arco{fill:none; stroke-width:9; stroke-linecap:butt}
+.selo .vazio{stroke:var(--line)}
+.selo .cheio{stroke:var(--brass); transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1)}
+.selo .pend{stroke:var(--line-soft)}
+.selo .n{font:700 34px var(--serif); fill:var(--text); font-variant-numeric:tabular-nums}
+.selo .de{font:500 12px var(--sans); fill:var(--muted)}
+.selo-leg{font-size:12.5px; color:var(--muted); line-height:1.5; width:100%}
+.selo-leg ul{list-style:none; margin:6px 0 0; padding:0; text-align:left}
+.selo-leg li{display:flex; justify-content:space-between; gap:8px; padding:2px 0; font-variant-numeric:tabular-nums}
+.selo-leg li b{color:var(--text); font-weight:600}
+.selo-leg details{margin-top:6px; text-align:left}
+.selo-leg summary{cursor:pointer; color:var(--brass)}
+.falta{margin:6px 0 0; padding-left:16px; color:var(--faint)}
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-top:1px solid var(--line); margin:0 -28px}
+.kpi{padding:16px 22px 18px; border-left:1px solid var(--line-soft)}
+.kpi:first-child{border-left:0; padding-left:28px}
+.kpi .k-rot{font-size:13px; color:var(--muted)}
+.kpi .k-val{font:600 24px/1.2 var(--serif); font-variant-numeric:tabular-nums; margin:4px 0 2px; color:var(--text)}
+.kpi .k-val.ok{color:var(--ok)} .kpi .k-val.warn{color:var(--warn)} .kpi .k-val.alerta-k{color:var(--brass)}
+.kpi .k-src{font-size:12px; color:var(--faint)}
+
+/* painéis planos, sem sombra; a grade dá a hierarquia */
+.paineis{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:16px}
+.painel{grid-column:span 12; background:var(--sheet); border-radius:var(--r-panel); padding:20px 22px; min-width:0}
+.painel.p-mand{grid-column:span 7} .painel.p-traj{grid-column:span 5}
+.painel > h3{font:600 18px/1.3 var(--serif); margin:0 0 14px}
 section.block{margin:0 0 34px}
-section.block > h3{font:600 20px/1.3 var(--serif); margin:0 0 14px}
 .note{color:var(--muted); font-size:13px}
 
-.grid-ind{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line)}
-.ind{padding:12px 14px; border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
+.grid-ind{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1px; background:var(--line-soft); border-radius:var(--r-md); overflow:hidden}
+.ind{padding:13px 15px; background:var(--sheet)}
 .ind .lbl{font-size:13px; color:var(--muted)}
-.ind .val{font:600 21px/1.25 var(--serif); font-variant-numeric:tabular-nums; margin:3px 0 1px}
+.ind .val{font:600 20px/1.25 var(--serif); font-variant-numeric:tabular-nums; margin:3px 0 1px}
 .ind .unit{font:400 13px var(--sans); color:var(--muted)}
 .ind .yr{font-size:12px; color:var(--faint)}
 
-.gov{display:grid; grid-template-columns:132px minmax(0,1fr); gap:22px; align-items:start}
-.portrait{width:132px; height:auto; aspect-ratio:4/5; border-radius:var(--r-md); border:1px solid var(--line); background:var(--raise); object-fit:cover; display:grid; place-items:center; font:600 40px var(--serif); color:var(--brass); overflow:hidden}
+.gov{display:grid; grid-template-columns:120px minmax(0,1fr); gap:22px; align-items:start}
+.portrait{width:120px; height:auto; aspect-ratio:4/5; border-radius:var(--r-md); border:1px solid var(--line); background:var(--raise); object-fit:cover; display:grid; place-items:center; font:600 38px var(--serif); color:var(--brass); overflow:hidden}
 .foto{margin:0}
-.foto figcaption{font-size:11px; color:var(--faint); margin-top:5px; line-height:1.35; max-width:132px}
+.foto figcaption{font-size:11px; color:var(--faint); margin-top:6px; line-height:1.35; max-width:120px}
 .gov .role{color:var(--muted); font-size:14px; margin:0}
-.gov h4{font:700 30px/1.15 var(--serif); margin:2px 0 4px}
-.gov .full{color:var(--muted); margin:0 0 12px}
-.kv{display:grid; grid-template-columns:max-content minmax(0,1fr); gap:5px 18px; margin:0; font-size:14px}
+.gov h4{font:700 32px/1.12 var(--serif); margin:2px 0 4px; letter-spacing:-.01em}
+.gov .full{color:var(--muted); margin:0 0 14px}
+.kv{display:grid; grid-template-columns:max-content minmax(0,1fr); gap:6px 20px; margin:0; font-size:14px}
 .kv dt{color:var(--muted)}
-.kv dd{margin:0; font-variant-numeric:tabular-nums}
-.kv dd{overflow-wrap:anywhere}
+.kv dd{margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere}
+.kv dt .def{display:block; font-size:12px; color:var(--faint); line-height:1.3}
 .alerta{border-left:3px solid var(--warn); background:var(--warn-soft); padding:10px 14px; border-radius:0 var(--r-md) var(--r-md) 0; margin:0 0 16px; font-size:14px}
-.party{display:inline-block; border:1px solid var(--brass); color:var(--brass); border-radius:var(--r-sm); padding:0 6px; font-weight:600; font-size:13px; margin-right:6px}
+.party{display:inline-block; border:1px solid var(--brass); color:var(--brass); border-radius:var(--r-chip); padding:0 6px; font-weight:600; font-size:12.5px; margin-right:6px}
 
-.status{border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden}
+.status{border-radius:var(--r-md); overflow:hidden; background:var(--surface)}
 .status-top{display:flex; gap:12px; align-items:flex-start; padding:14px 16px}
-.status-top .dot{width:10px; height:10px; border-radius:50%; margin-top:6px; flex:none}
+.status-top .dot{width:9px; height:9px; border-radius:50%; margin-top:7px; flex:none}
 .status-top strong{display:block; font-size:15px}
 .status-top p{margin:2px 0 0; color:var(--muted); font-size:14px}
-.status.ok{border-color:rgba(111,184,166,.45)} .status.ok .status-top{background:var(--ok-soft)} .status.ok .dot{background:var(--ok)}
-.status.warn{border-color:rgba(226,130,106,.5)} .status.warn .status-top{background:var(--warn-soft)} .status.warn .dot{background:var(--warn)}
-.status.info .status-top{background:var(--info-soft)} .status.info .dot{background:var(--info)}
+.status.ok .dot{background:var(--ok)} .status.warn .dot{background:var(--warn)} .status.info .dot{background:var(--info)}
+.status.warn{box-shadow:inset 3px 0 0 var(--warn)}
 table.src{width:100%; border-collapse:collapse; font-size:14px}
 table.src th, table.src td{text-align:left; padding:9px 16px; border-top:1px solid var(--line-soft); vertical-align:top}
 table.src th{color:var(--muted); font-weight:500; font-size:13px}
-.tag{display:inline-block; font-size:12px; padding:1px 7px; border-radius:var(--r-sm); white-space:nowrap}
+.tag{display:inline-block; font-size:12px; padding:1px 8px; border-radius:var(--r-chip); white-space:nowrap}
 .tag.ok{background:var(--ok-soft); color:var(--ok)} .tag.warn{background:var(--warn-soft); color:var(--warn)} .tag.info{background:var(--info-soft); color:var(--info)}
 .tablewrap{overflow-x:auto}
 
 .timeline{list-style:none; margin:0; padding:0; border-left:2px solid var(--line)}
 .timeline li{position:relative; padding:0 0 12px 18px}
-.timeline li::before{content:""; position:absolute; left:-6px; top:7px; width:10px; height:10px; border-radius:50%; background:var(--surface); border:2px solid var(--faint)}
+.timeline li::before{content:""; position:absolute; left:-6px; top:7px; width:10px; height:10px; border-radius:50%; background:var(--sheet); border:2px solid var(--faint)}
 .timeline li.won::before{border-color:var(--brass); background:var(--brass)}
 .timeline .yr{font-weight:600; font-variant-numeric:tabular-nums; margin-right:8px}
 .timeline .meta{color:var(--muted); font-size:14px}
+.prose{font:400 16px/1.72 var(--serif); max-width:70ch; margin:0}
 
-.prose{font:400 16px/1.7 var(--serif); max-width:72ch; margin:0}
-.fisc{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px}
-.card{border:1px solid var(--line); border-radius:var(--r-md); padding:16px; background:var(--surface)}
-.card h4{font:600 15px/1.3 var(--sans); margin:0 0 12px; color:var(--muted)}
-.nota-capag{display:flex; align-items:baseline; gap:14px; margin-bottom:10px}
+.fisc{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px}
+.card{border-radius:var(--r-md); padding:18px; background:var(--surface)}
+.card h4{font:600 15px/1.3 var(--sans); margin:0 0 12px; color:var(--text)}
+.card .kv{grid-template-columns:minmax(0,1fr) auto}
+.card .kv dd{white-space:nowrap; text-align:right}
+.nota-capag{display:flex; align-items:baseline; gap:14px; margin-bottom:12px}
 .nota-capag .letra{font:700 46px/1 var(--serif); color:var(--brass)}
 .nota-capag.ok .letra{color:var(--ok)} .nota-capag.warn .letra{color:var(--warn)}
 .nota-capag .sub{color:var(--muted); font-size:13px}
-.traj{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
-.traj span{font-size:12px; border:1px solid var(--line); border-radius:var(--r-sm); padding:2px 7px; font-variant-numeric:tabular-nums}
+.traj{display:flex; flex-wrap:wrap; gap:6px; margin-top:14px}
+.traj span{font-size:12px; background:var(--raise); border-radius:var(--r-chip); padding:2px 8px; font-variant-numeric:tabular-nums; color:var(--muted)}
 .traj b{color:var(--text)}
-.medidor{margin:6px 0 14px}
-.medidor .rot{display:flex; justify-content:space-between; font-size:13px}
-.medidor .rot b{font:700 20px var(--serif); font-variant-numeric:tabular-nums}
-.medidor .trilho{position:relative; height:10px; border-radius:5px; background:var(--line-soft); margin-top:6px; overflow:hidden}
-.medidor .enchido{position:absolute; left:0; top:0; bottom:0; border-radius:5px; background:var(--ok)}
+.medidor{margin:6px 0 16px}
+.medidor .rot{display:flex; justify-content:space-between; align-items:baseline; font-size:13px}
+.medidor .rot b{font:700 21px var(--serif); font-variant-numeric:tabular-nums}
+.medidor .trilho{position:relative; height:8px; border-radius:4px; background:var(--line-soft); margin-top:8px}
+.medidor .enchido{position:absolute; left:0; top:0; bottom:0; border-radius:4px; background:var(--ok)}
 .medidor.m-acima .enchido{background:var(--warn)} .medidor.m-alerta .enchido{background:var(--brass)}
 .medidor.m-acima .rot b{color:var(--warn)}
-.kv dt .def{display:block; font-size:12px; color:var(--faint); line-height:1.3}
-.card .kv{grid-template-columns:minmax(0,1fr) auto}
-.card .kv dd{white-space:nowrap; text-align:right}
-.medidor .marca{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--muted)}
-.medidor .leg{font-size:12px; color:var(--faint); margin-top:4px}
+.medidor .marca{position:absolute; top:-3px; bottom:-3px; width:2px; border-radius:1px; background:var(--muted)}
+.medidor .leg{font-size:12px; color:var(--faint); margin-top:6px}
 details.brutos{margin-top:12px; font-size:12.5px}
 details.brutos summary{cursor:pointer; color:var(--muted)}
 details.brutos pre{max-height:280px; overflow:auto; background:var(--ink); border:1px solid var(--line-soft); border-radius:var(--r-md); padding:8px; font:11.5px/1.45 ui-monospace,Menlo,monospace; white-space:pre}
-.attrib{font-size:12px; color:var(--faint); margin-top:6px}
+.attrib{font-size:12px; color:var(--faint); margin-top:8px}
 
-.skel{height:14px; border-radius:var(--r-sm); background:linear-gradient(90deg,var(--raise),var(--line-soft),var(--raise)); background-size:200% 100%; animation:sh 1.3s linear infinite; margin:6px 0}
+.skel{height:14px; border-radius:var(--r-chip); background:linear-gradient(90deg,var(--raise),var(--line-soft),var(--raise)); background-size:200% 100%; animation:sh 1.3s linear infinite; margin:6px 0}
 @keyframes sh{to{background-position:-200% 0}}
 .err{border:1px dashed var(--line); border-radius:var(--r-md); padding:12px 14px; color:var(--muted); font-size:14px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
-
 .toast{position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%); background:var(--raise); border:1px solid var(--brass); padding:9px 16px; border-radius:var(--r-md); font-size:14px; opacity:0; pointer-events:none; transition:opacity .2s}
 .toast.show{opacity:1}
 
+@media (max-width:1100px){
+  .painel.p-mand, .painel.p-traj{grid-column:span 12}
+}
 @media (max-width:860px){
   .app{grid-template-columns:1fr}
-  .rail{position:static; height:auto; border-right:0; border-bottom:1px solid var(--line)}
+  .rail{position:static; height:auto; border-right:0; border-bottom:1px solid var(--line-soft)}
   .ufmap{max-width:340px}
   .munlist{max-height:46vh}
+  .hero{padding:20px 18px 0}
+  .hero-main{grid-template-columns:1fr; gap:18px}
+  .selo-box{flex-direction:row; align-items:center; text-align:left}
+  .selo{width:112px; height:112px; flex:none}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr)); margin:0 -18px}
+  .kpi, .kpi:first-child{padding:14px 18px; border-left:0; border-top:1px solid var(--line-soft)}
+  .kpi:nth-child(even){border-left:1px solid var(--line-soft)}
   .gov{grid-template-columns:96px minmax(0,1fr)}
   .portrait{width:96px; font-size:30px}
-  .gov h4{font-size:24px}
+  .gov h4{font-size:26px}
 }
 @media (max-width:560px){
   .gov{grid-template-columns:1fr; gap:14px}
   .portrait{width:84px; font-size:28px}
   .kv{grid-template-columns:minmax(92px,max-content) minmax(0,1fr); gap:6px 12px}
+  .painel{padding:16px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
 @media print{
-  :root{--ink:#fff; --surface:#fff; --raise:#f4f4f4; --line:#ccc; --line-soft:#ddd; --text:#111; --muted:#444; --faint:#666; --brass:#7a5a12}
+  :root{--ink:#fff; --sheet:#fff; --surface:#fff; --raise:#f4f4f4; --line:#ccc; --line-soft:#ddd; --text:#111; --muted:#444; --faint:#666; --brass:#7a5a12}
   .rail,.toolbar,.err .btn,.toast{display:none!important}
   .app{display:block} main{padding:0}
-  section.block{break-inside:avoid}
+  .painel,.hero{break-inside:avoid; border:1px solid #ccc}
   a{color:#111}
 }
 </style>
@@ -682,13 +718,19 @@ function montarDoc() {
       <button class="btn" id="b-link">Copiar link</button>
     </div>
     <header class="mun-head" id="s-head"></header>
-    <section class="block" aria-labelledby="h-gov"><h3 id="h-gov">Quem governa</h3><div id="s-gov"></div></section>
-    <section class="block" aria-labelledby="h-mand"><h3 id="h-mand">Situação do mandato</h3><div id="s-mand"></div></section>
-    <section class="block" aria-labelledby="h-ind"><h3 id="h-ind">Indicadores do município</h3><div id="s-ind"></div></section>
-    <section class="block" aria-labelledby="h-fisc"><h3 id="h-fisc">Situação fiscal</h3><div id="s-fisc"></div></section>
-    <section class="block" aria-labelledby="h-traj"><h3 id="h-traj">Trajetória do prefeito</h3><div id="s-traj"></div></section>
-    <section class="block" aria-labelledby="h-sobre"><h3 id="h-sobre">Sobre o município</h3><div id="s-sobre"></div></section>
-    <section class="block" aria-labelledby="h-fontes"><h3 id="h-fontes">Fontes e proveniência</h3><div id="s-fontes"></div></section>`;
+    <section class="hero" aria-labelledby="h-gov">
+      <h3 id="h-gov" class="sr">Quem governa</h3>
+      <div class="hero-main"><div id="s-gov"></div><div id="s-selo" class="selo-box"></div></div>
+      <div id="s-kpi" class="kpis" aria-label="Indicadores-chave"></div>
+    </section>
+    <div class="paineis">
+      <section class="painel p-mand" aria-labelledby="h-mand"><h3 id="h-mand">Situação do mandato</h3><div id="s-mand"></div></section>
+      <section class="painel p-traj" aria-labelledby="h-traj"><h3 id="h-traj">Trajetória do prefeito</h3><div id="s-traj"></div></section>
+      <section class="painel" aria-labelledby="h-fisc"><h3 id="h-fisc">Situação fiscal</h3><div id="s-fisc"></div></section>
+      <section class="painel" aria-labelledby="h-ind"><h3 id="h-ind">Indicadores do município</h3><div id="s-ind"></div></section>
+      <section class="painel" aria-labelledby="h-sobre"><h3 id="h-sobre">Sobre o município</h3><div id="s-sobre"></div></section>
+      <section class="painel" aria-labelledby="h-fontes"><h3 id="h-fontes">Fontes e proveniência</h3><div id="s-fontes"></div></section>
+    </div>`;
   render();
 }
 
@@ -696,6 +738,8 @@ function render() {
   if (!S.cod || !$("#s-head")) return;
   pintar("s-head", rHead());
   pintar("s-gov", rGov());
+  pintar("s-selo", rSelo());
+  pintar("s-kpi", rKpi());
   pintar("s-mand", rMandato());
   pintar("s-ind", rInd());
   pintar("s-fisc", rFiscal());
@@ -721,7 +765,7 @@ function rHead() {
     wd?.qid ? link(`https://www.wikidata.org/wiki/${wd.qid}`, "Wikidata") : "",
     link(`https://hubpolitico.com.br/local/${ufs}/${sl}`, "HubPolítico"),
   ].filter(Boolean).join("");
-  return `<p class="where">${esc(UF_NOME[uf] || uf)} · código IBGE ${esc(S.cod)}</p>
+  return `<p class="where">${esc(UF_NOME[uf] || uf)}, código IBGE ${esc(S.cod)}</p>
     <h2>${esc(nome) || "Carregando…"}</h2>
     <p class="facts">${fatos.length ? esc(fatos.join(", ")) + "." : (loc?.status === "carregando" ? "&nbsp;" : "")}</p>
     <div class="links">${links}</div>`;
@@ -749,7 +793,7 @@ function rGov() {
         : `Há fonte que aponta outra pessoa no cargo (veja Situação do mandato). Os dados abaixo são do eleito na eleição registrada no TSE.`}</p>` : "";
   const partido = `<span class="party">${esc(p.partido || "?")}</span>${esc(p.partido_nome ? titulo(p.partido_nome) : "")}`;
   const kv = [
-    ["Partido", partido + (p.federacao ? ` <span class="note">· federação ${esc(p.federacao)}</span>` : "")],
+    ["Partido", partido + (p.federacao ? ` <span class="note">(federação ${esc(p.federacao)})</span>` : "")],
     ["Eleição", `${esc(fmtData(e.data) || e.ano)}${e.turno === 2 ? ", 2º turno" : ""}${e.suplementar ? " (suplementar)" : ""}`],
     p.votos != null ? ["Votos", `${fmtNum(p.votos)}${p.votos_pct != null ? ` <span class="note">(${fmtNum(p.votos_pct, 1)}% dos válidos)</span>` : ""}`] : null,
     reg.vice ? ["Vice", esc(titulo(reg.vice.nome_urna || reg.vice.nome)) + (reg.vice.partido ? ` <span class="note">${esc(reg.vice.partido)}</span>` : "")] : null,
@@ -770,6 +814,82 @@ function rGov() {
       <dl class="kv">${kv.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join("")}</dl>
       ${divulga ? `<p class="links" style="margin-top:10px">${divulga}</p>` : ""}
     </div></div>`;
+}
+
+/* ================================================================ completude */
+/** Quantos dos dados esperados cada fonte trouxe. Fonte ainda respondendo conta como pendente, não como falta. */
+function completude() {
+  const sec = (k) => S.secoes[k] || {status: "carregando"};
+  const pend = (...ks) => ks.some(k => sec(k).status === "carregando");
+  const grupos = [];
+  const add = (nome, fontes, campos) => {
+    const p = pend(...fontes);
+    grupos.push({nome, pendente: p, total: campos.length, ok: p ? 0 : campos.filter(c => c[1]).length,
+      faltando: p ? [] : campos.filter(c => !c[1]).map(c => c[0])});
+  };
+  if (S.uf !== "DF") {
+    const r = sec("tse").dados?.registro, pr = r?.prefeito || {};
+    add("Eleição (TSE)", ["tse"], [["prefeito", pr.nome], ["partido", pr.partido], ["data da eleição", r?.eleicao?.data],
+      ["votos", pr.votos != null], ["vice", r?.vice], ["nascimento", pr.nascimento], ["bens declarados", pr.bens_total != null],
+      ["foto oficial", fotoTSE(pr)]]);
+  }
+  const itens = sec("ind").dados?.itens || [], tem = (k) => itens.some(i => i.k === k);
+  add("Município (IBGE)", ["local", "ind", "ibge"], [["região", sec("local").dados?.regiao], ["gentílico", sec("ibge").dados?.gentilico?.valor],
+    ...INDICADORES.map(i => [i.lbl.toLowerCase(), tem(i.k)])]);
+  const wd = sec("wd").dados;
+  add("Referências (Wikidata)", ["wd"], [["site oficial", wd?.site], ["verbete na Wikipedia", wd?.artigo], ["prefeito na Wikidata", wd?.prefeito?.nome]]);
+  if (S.uf !== "DF") {
+    const cp = sec("capag").dados?.trajetoria, sc = sec("siconfi").dados;
+    add("Fiscal (Tesouro)", ["capag", "siconfi"], [["nota CAPAG", cp && cp.length && cp[cp.length - 1].capag],
+      ["despesa com pessoal", sc?.pessoal?.reconhecido], ["dívida consolidada", sc?.dcl?.reconhecido], ["entregas ao SICONFI", sc?.extrato?.length]]);
+  }
+  const prontos = grupos.filter(g => !g.pendente);
+  return {grupos, ok: prontos.reduce((a, g) => a + g.ok, 0), total: grupos.reduce((a, g) => a + g.total, 0),
+    pendentes: grupos.filter(g => g.pendente).length};
+}
+
+function rSelo() {
+  const c = completude(), R = 62, C = 2 * Math.PI * R, folga = 6;
+  let giro = -90;
+  const arcos = c.grupos.map(g => {
+    const fatia = 360 * g.total / c.total, comp = C * (fatia - folga) / 360;
+    const cheio = g.pendente ? 0 : comp * g.ok / g.total;
+    const rot = `rotate(${giro.toFixed(2)} 74 74)`; giro += fatia;
+    return `<circle class="arco ${g.pendente ? "pend" : "vazio"}" cx="74" cy="74" r="${R}" stroke-dasharray="${comp.toFixed(2)} ${C.toFixed(2)}" transform="${rot}"/>
+      <circle class="arco cheio" cx="74" cy="74" r="${R}" stroke-dasharray="${cheio.toFixed(2)} ${C.toFixed(2)}" transform="${rot}"/>`;
+  }).join("");
+  const faltas = c.grupos.filter(g => g.faltando.length);
+  return `<svg class="selo" viewBox="0 0 148 148" role="img" aria-label="${c.ok} de ${c.total} dados encontrados">
+      ${arcos}<text class="n" x="74" y="78" text-anchor="middle">${c.ok}</text><text class="de" x="74" y="97" text-anchor="middle">de ${c.total}</text></svg>
+    <div class="selo-leg">${c.pendentes ? "Consultando as fontes…" : "dados encontrados"}
+      <ul>${c.grupos.map(g => `<li><span>${esc(g.nome)}</span><b>${g.pendente ? "…" : `${g.ok}/${g.total}`}</b></li>`).join("")}</ul>
+      ${faltas.length ? `<details><summary>O que falta</summary>${faltas.map(g => `<p class="falta"><b>${esc(g.nome)}:</b> ${esc(g.faltando.join(", "))}</p>`).join("")}</details>` : ""}
+    </div>`;
+}
+
+function rKpi() {
+  const it = (k) => (S.secoes.ind?.dados?.itens || []).find(i => i.k === k);
+  const carregando = (k) => (S.secoes[k]?.status || "carregando") === "carregando";
+  const kpi = (rot, val, src, cls = "") => `<div class="kpi"><div class="k-rot">${esc(rot)}</div>
+    <div class="k-val ${cls}">${val}</div><div class="k-src">${esc(src)}</div></div>`;
+  const pop = it("pop"), pib = it("pib");
+  const cp = S.secoes.capag?.dados?.trajetoria, u = cp && cp.length ? cp[cp.length - 1] : null;
+  const pes = S.secoes.siconfi?.dados?.pessoal;
+  const out = [
+    carregando("ind") ? kpi("População", skel(1), "") : kpi("População", pop ? fmtNum(pop.valor) : "—", pop ? `IBGE, ${pop.ano}` : "IBGE"),
+    carregando("ind") ? kpi("PIB per capita", skel(1), "") : kpi("PIB per capita", pib ? fmtBRL(pib.valor) : "—", pib ? `IBGE, ${pib.ano}` : "IBGE"),
+  ];
+  if (S.uf === "DF") {
+    out.push(kpi("Capacidade de pagamento", "—", "não se aplica ao DF"), kpi("Pessoal sobre a RCL", "—", "não se aplica ao DF"));
+  } else {
+    out.push(carregando("capag") ? kpi("Capacidade de pagamento", skel(1), "")
+      : kpi("Capacidade de pagamento", u ? esc(u.capag || "n.d.") : "—", u ? `CAPAG, ${fmtPos(u.posicao)}` : "CAPAG",
+        u?.capag ? (/^[AB]/.test(u.capag) ? "ok" : "warn") : ""));
+    out.push(carregando("siconfi") ? kpi("Pessoal sobre a RCL", skel(1), "")
+      : kpi("Pessoal sobre a RCL", pes?.reconhecido ? fmtPct(pes.pct) : "—", "RGF, limite de 54%",
+        pes?.reconhecido ? (pes.pct > 54 ? "warn" : pes.pct >= 48.6 ? "alerta-k" : "ok") : ""));
+  }
+  return out.join("");
 }
 
 /** Foto oficial do TSE: caminho relativo validado antes de virar src. */
@@ -804,7 +924,7 @@ function rInd() {
   if (s.status === "erro") return erroBox(`Indicadores do IBGE indisponíveis (${s.erro}).`, "ind");
   const cards = s.dados.itens.map(i => {
     const v = i.pre ? `${esc(i.unit)} ${fmtNum(i.valor, i.dec)}` : `${fmtNum(i.valor, i.dec)}${i.unit ? ` <span class="unit">${esc(i.unit)}</span>` : ""}`;
-    return `<div class="ind"><div class="lbl">${esc(i.lbl)}</div><div class="val">${v}</div><div class="yr">${esc(i.ano)} · IBGE</div></div>`;
+    return `<div class="ind"><div class="lbl">${esc(i.lbl)}</div><div class="val">${v}</div><div class="yr">IBGE, ${esc(i.ano)}</div></div>`;
   }).join("");
   const falta = s.dados.faltaram ? `<p class="note" style="margin-top:8px">${s.dados.faltaram} indicador(es) não responderam a tempo no IBGE e ficaram de fora.</p>` : "";
   return `<div class="grid-ind">${cards}</div>${falta}`;
@@ -833,17 +953,17 @@ function rFiscal() {
 
 function rCapag() {
   const s = S.secoes.capag;
-  if (!s || s.status === "carregando") return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4>${skel(4)}</div>`;
-  if (s.status === "erro") return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4>
+  if (!s || s.status === "carregando") return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4>${skel(4)}</div>`;
+  if (s.status === "erro") return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4>
     <p class="note">Base da CAPAG indisponível (${esc(s.erro)}). Ela é gerada pelo ETL semanal.</p></div>`;
   const d = s.dados, t = d.trajetoria;
-  if (!t || !t.length) return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4><p class="note">Município ausente nas posições publicadas pelo Tesouro.</p></div>`;
+  if (!t || !t.length) return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4><p class="note">Município ausente nas posições publicadas pelo Tesouro.</p></div>`;
   const u = t[t.length - 1];
   const boa = u.capag && /^[AB]/.test(u.capag);
   const linha = (nome, fr, nota, def) => `<dt>${esc(nome)}<span class="def">${esc(def)}</span></dt><dd>${fr != null ? fmtPct(100 * fr) : "—"}${nota ? ` <span class="party" style="margin-left:6px">${esc(nota)}</span>` : ""}</dd>`;
-  return `<div class="card"><h4>CAPAG — capacidade de pagamento</h4>
+  return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4>
     <div class="nota-capag ${u.capag ? (boa ? "ok" : "warn") : ""}"><span class="letra">${esc(u.capag || "n.d.")}</span>
-      <span class="sub">posição de ${esc(fmtPos(u.posicao))} · ano-base ${esc(u.ano_base)}<br>
+      <span class="sub">posição de ${esc(fmtPos(u.posicao))}, ano-base ${esc(u.ano_base)}<br>
       ${u.capag ? (boa ? "Em regra, elegível a operação de crédito com garantia da União." : "Em regra, não elegível a operação com garantia da União.")
         : `Nota não calculada pelo Tesouro${u.capag_publicada ? ` (publicado: “${esc(u.capag_publicada)}”)` : ""}. Costuma indicar declaração obrigatória não homologada no SICONFI.`}</span></div>
     <dl class="kv">
@@ -857,7 +977,7 @@ function rCapag() {
 }
 
 function rSiconfi() {
-  const s = S.secoes.siconfi, titulo_ = "LRF — último Relatório de Gestão Fiscal";
+  const s = S.secoes.siconfi, titulo_ = "Limites da LRF";
   if (!s || s.status === "carregando") return `<div class="card"><h4>${titulo_}</h4>${skel(4)}</div>`;
   if (s.status === "erro") return `<div class="card"><h4>${titulo_}</h4>${erroBox(`SICONFI indisponível (${s.erro}).`, "siconfi")}</div>`;
   const d = s.dados;
@@ -866,11 +986,11 @@ function rSiconfi() {
   const per = `${d.rgf.periodo}º ${d.rgf.periodicidade === "S" ? "semestre" : "quadrimestre"} de ${d.rgf.exercicio}`;
   const naoLido = (o) => !o || !o.reconhecido;
   return `<div class="card"><h4>${titulo_}</h4>
-    <p class="note" style="margin:-6px 0 10px">${esc(per)}${d.rgf.tipo ? ` · ${esc(d.rgf.tipo)}` : ""}</p>
+    <p class="note" style="margin:-6px 0 12px">Último Relatório de Gestão Fiscal: ${esc(per)}</p>
     ${naoLido(d.pessoal) ? `<p class="note">Despesa com pessoal: linha não identificada no RGF (veja os dados brutos).</p>`
-      : medidor("Despesa com pessoal / RCL", d.pessoal.pct, [48.6, 51.3, 54], 70, `alerta 48,6% · prudencial 51,3% · limite 54% (Executivo) · ${d.pessoal.origem}`)}
+      : medidor("Despesa com pessoal / RCL", d.pessoal.pct, [48.6, 51.3, 54], 70, `Alerta em 48,6%, prudencial em 51,3% e limite de 54% para o Executivo. Valor ${d.pessoal.origem}.`)}
     ${naoLido(d.dcl) ? `<p class="note">Dívida consolidada líquida: linha não identificada no RGF (veja os dados brutos).</p>`
-      : medidor("Dívida consolidada líquida / RCL", d.dcl.pct, [108, 120], 160, `alerta 108% · limite 120% (Res. Senado 40/2001) · ${d.dcl.origem}`)}
+      : medidor("Dívida consolidada líquida / RCL", d.dcl.pct, [108, 120], 160, `Alerta em 108% e limite de 120% (Resolução do Senado 40/2001). Valor ${d.dcl.origem}.`)}
     ${d.pessoal?.rcl ? `<p class="note">RCL ajustada: ${fmtBRL(d.pessoal.rcl)}</p>` : ""}
     ${ent}${brutos(d)}
     <p class="attrib">Fonte: SICONFI (Tesouro Nacional), consulta em tempo real.</p></div>`;
@@ -890,7 +1010,7 @@ function rEntregas(d) {
     <thead><tr><th>Declaração</th><th>Exercício</th><th>Período</th><th>Situação</th></tr></thead><tbody>${lin.map(i => `<tr>
     <td>${esc(campo(i, CAMPOS.entregavel))}</td><td>${esc(campo(i, CAMPOS.exercicio))}</td>
     <td>${esc([campo(i, CAMPOS.periodo), campo(i, CAMPOS.periodicidade)].filter(Boolean).join(" "))}</td>
-    <td class="note">${esc([campo(i, CAMPOS.status), campo(i, CAMPOS.data) ? fmtData(String(campo(i, CAMPOS.data)).slice(0, 10)) : ""].filter(Boolean).join(" · "))}</td></tr>`).join("")}
+    <td class="note">${esc([campo(i, CAMPOS.status), campo(i, CAMPOS.data) ? fmtData(String(campo(i, CAMPOS.data)).slice(0, 10)) : ""].filter(Boolean).join(", "))}</td></tr>`).join("")}
     </tbody></table></div></details>`;
 }
 
@@ -910,7 +1030,7 @@ function rTraj() {
     partes.push(`<ul class="timeline">${reg.trajetoria.map(t => {
       const ganhou = /^eleit/i.test(t.resultado || "");
       return `<li class="${ganhou ? "won" : ""}"><span class="yr">${esc(t.ano)}</span>${esc(t.cargo)} em ${esc(titulo(t.local || ""))}
-        <div class="meta">${esc([t.partido, t.resultado ? fmtResultado(t.resultado) : ""].filter(Boolean).join(" · "))}</div></li>`;
+        <div class="meta">${esc([t.partido, t.resultado ? fmtResultado(t.resultado) : ""].filter(Boolean).join(", "))}</div></li>`;
     }).join("")}</ul><p class="attrib">Candidaturas anteriores no TSE, ligadas por nome completo e data de nascimento.</p>`);
   }
   if (reg?.eleicoes_anteriores_no_mandato?.length) {
@@ -958,7 +1078,7 @@ function rFontes() {
     else tag = `<span class="tag info">consultando</span>`;
     let det = s.status === "erro" ? esc(s.erro) : "";
     if (k === "tse" && s.dados?.gerado_em) det = `Base gerada em ${esc(fmtData(s.dados.gerado_em))}`;
-    if (k === "capag" && s.dados?.posicoes?.length) det = `Posição de ${esc(fmtPos(s.dados.posicoes[s.dados.posicoes.length - 1].posicao))} · licença ODbL`;
+    if (k === "capag" && s.dados?.posicoes?.length) det = `Posição de ${esc(fmtPos(s.dados.posicoes[s.dados.posicoes.length - 1].posicao))}, licença ODbL`;
     if (k === "siconfi" && s.dados?.rgf) det = `RGF ${esc(s.dados.rgf.periodo)}º ${s.dados.rgf.periodicidade === "S" ? "sem." : "quad."} ${esc(s.dados.rgf.exercicio)}`;
     if (k === "ind" && s.dados?.faltaram) det = `${s.dados.faltaram} indicador(es) sem resposta`;
     return `<tr><td>${esc(nome)}</td><td class="note">${esc(uso)}</td><td>${tag}</td><td class="note">${det}</td></tr>`;
@@ -1124,7 +1244,7 @@ function lerHash() {
 }
 
 /* ================================================================ testes expostos (sem efeito em produção) */
-window.__BM__ = {limparCache: () => cache.clear(), fotoTSE, lerPessoal, lerDCL, nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
+window.__BM__ = {limparCache: () => cache.clear(), completude, fotoTSE, lerPessoal, lerDCL, nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
 
 montarMapa();
 ligarEventos();

@@ -10,11 +10,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#10171f; --surface:#17212b; --raise:#1d2935; --line:#2b3947; --line-soft:#223040;
-  --text:#e8e3d8; --muted:#93a1ae; --faint:#66768a; --brass:#c8a35a; --brass-soft:rgba(200,163,90,.16);
-  --ok:#6fb8a6; --warn:#e2826a; --info:#7c93ad;
+  --ink:#12181f; --sheet:#151c24; --surface:#18202a; --raise:#1f2833; --line:#2a3542; --line-soft:#212b36;
+  --text:#e9e5dc; --muted:#9aa6b2; --faint:#6b7a8b; --brass:#c9a55c; --brass-soft:rgba(200,163,90,.16);
+  --ok:#6db6a3; --warn:#de8467; --info:#7f97b0;
   --serif:"Literata", Georgia, serif; --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --r-sm:4px; --r-md:8px;
+  --r-sm:6px; --r-md:10px;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 *,*::before,*::after{box-sizing:inherit}
@@ -96,6 +96,73 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
   .bar:nth-child(n+7){display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ---------- ficha em modal ---------- */
+.ficha-fundo{position:fixed; inset:0; z-index:50; background:rgba(8,11,15,.66); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:flex-start; justify-content:center; padding:max(24px, env(safe-area-inset-top,0px)) 16px 24px; overflow-y:auto}
+.ficha-fundo[hidden]{display:none}
+.ficha{width:min(880px,100%); background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:0 24px 64px rgba(0,0,0,.45); animation:abre .16s ease-out; outline:none}
+@keyframes abre{from{opacity:0; transform:translateY(6px) scale(.99)} to{opacity:1; transform:none}}
+.f-barra{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line-soft)}
+.f-barra .pos{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+.f-barra .nav{display:flex; gap:6px}
+.f-btn{background:transparent; border:1px solid var(--line); border-radius:8px; padding:5px 11px; cursor:pointer; font-size:13px; color:var(--muted)}
+.f-btn:hover:not(:disabled){border-color:var(--brass); color:var(--text)}
+.f-btn:disabled{opacity:.4; cursor:default}
+.f-topo{display:grid; grid-template-columns:96px minmax(0,1fr) 120px; gap:22px; padding:22px 24px 18px; align-items:start}
+.f-retrato{width:96px; aspect-ratio:4/5; border-radius:10px; border:1px solid var(--line); background:var(--raise); object-fit:cover; display:grid; place-items:center; font:600 32px var(--serif); color:var(--brass)}
+.f-papel{margin:0; color:var(--muted); font-size:13.5px}
+.f-nome{font:700 30px/1.1 var(--serif); margin:3px 0 4px; letter-spacing:-.01em}
+.f-sub{margin:0 0 10px; color:var(--muted)}
+.f-pill{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:2px 10px; border-radius:999px; background:var(--raise); color:var(--muted)}
+.f-pill::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--info)}
+.f-pill.consistente::before{background:var(--ok)} .f-pill.divergente::before{background:var(--warn)}
+.f-pill.divergente{color:var(--warn)}
+.f-selo{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; color:var(--muted); text-align:center}
+.f-selo svg{width:104px; height:104px}
+.f-selo .arco{fill:none; stroke-width:8}
+.f-selo .vazio{stroke:var(--line)} .f-selo .pend{stroke:var(--line-soft)}
+.f-selo .cheio{stroke:var(--brass); transition:stroke-dasharray .5s cubic-bezier(.2,.7,.2,1)}
+.f-selo .n{font:700 28px var(--serif); fill:var(--text)} .f-selo .de{font:500 11px var(--sans); fill:var(--muted)}
+.f-kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.f-kpi{padding:13px 18px; border-left:1px solid var(--line-soft)}
+.f-kpi:first-child{border-left:0; padding-left:24px}
+.f-kpi .r{font-size:12.5px; color:var(--muted)}
+.f-kpi .v{font:600 21px/1.25 var(--serif); font-variant-numeric:tabular-nums; margin-top:2px}
+.f-kpi .v.ok{color:var(--ok)} .f-kpi .v.warn{color:var(--warn)}
+.f-kpi .s{font-size:11.5px; color:var(--faint)}
+.f-corpo{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:18px 24px}
+.f-sec{background:var(--sheet); border-radius:12px; padding:16px 18px; min-width:0}
+.f-sec h3{font:600 16px/1.3 var(--serif); margin:0 0 10px}
+.f-sec dl{display:grid; grid-template-columns:max-content minmax(0,1fr); gap:5px 16px; margin:0; font-size:13.5px}
+.f-sec dt{color:var(--muted)} .f-sec dd{margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere}
+.f-sec .vazio{color:var(--faint)}
+.f-sec.largo{grid-column:span 2}
+.f-capag{display:flex; align-items:baseline; gap:12px; margin-bottom:8px}
+.f-capag b{font:700 38px/1 var(--serif); color:var(--brass)}
+.f-capag b.ok{color:var(--ok)} .f-capag b.warn{color:var(--warn)}
+.f-traj{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
+.f-traj span{font-size:12px; background:var(--raise); border-radius:6px; padding:2px 8px; color:var(--muted)}
+.f-traj b{color:var(--text)}
+.f-links{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13.5px}
+.f-rodape{display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; padding:14px 24px 20px; border-top:1px solid var(--line-soft)}
+.f-rodape .acoes{display:flex; gap:8px; flex-wrap:wrap}
+.f-rodape .primario{background:var(--brass); color:#1b1508; border:0; border-radius:8px; padding:8px 14px; font-weight:600; text-decoration:none; font-size:13.5px}
+.f-rodape .fontes{font-size:11.5px; color:var(--faint); max-width:52ch}
+#tbody tr{cursor:pointer}
+@media (max-width:700px){
+  .f-barra .rot{display:none}
+  .f-btn{min-width:40px; padding:6px 10px}
+  .f-selo span{text-align:left}
+  .f-topo{grid-template-columns:72px minmax(0,1fr); padding:18px}
+  .f-retrato{width:72px; font-size:24px}
+  .f-selo{grid-column:span 2; flex-direction:row; justify-content:flex-start; gap:12px}
+  .f-selo svg{width:80px; height:80px}
+  .f-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .f-kpi, .f-kpi:first-child{padding:12px 18px; border-left:0; border-top:1px solid var(--line-soft)}
+  .f-kpi:nth-child(even){border-left:1px solid var(--line-soft)}
+  .f-corpo{grid-template-columns:1fr; padding:14px}
+  .f-sec.largo{grid-column:span 1}
+  .f-nome{font-size:24px}
+}
 </style>
 </head>
 <body>
@@ -294,6 +361,7 @@ function paraHash() {
   for (const k of ["gen", "turno", "imin", "imax", "pct", "pop", "sit"]) if (f[k] !== "") p.set(k, f[k]);
   if (f.sup) p.set("sup", "1");
   if (S.ord.col !== "municipio" || S.ord.dir !== 1) p.set("ord", `${S.ord.col}:${S.ord.dir > 0 ? "a" : "d"}`);
+  if (S.ficha) p.set("ficha", S.ficha.r.codigo_ibge);
   const h = p.toString();
   history.replaceState(null, "", h ? "#" + h : location.pathname + location.search);
 }
@@ -307,6 +375,7 @@ function deHash() {
   f.sup = p.get("sup") === "1";
   const [c, d] = (p.get("ord") || "").split(":");
   if (CHAVE[c]) S.ord = {col: c, dir: d === "d" ? -1 : 1};
+  S.fichaPedida = /^\d{7}$/.test(p.get("ficha") || "") ? p.get("ficha") : null;
 }
 function sincronizarCampos() {
   const f = S.f;
@@ -336,7 +405,7 @@ function render() {
     <span class="stat">idade média <b>${media != null ? fmtN(media, 0) : "—"}</b></span>
     <span class="stat"><b>${partidos}</b> partidos</span>
     ${divergentes ? `<button class="stat btn" id="b-div" style="padding:2px 8px">⚠ <b>${fmtN(divergentes)}</b> com fontes divergentes</button>` : ""}
-    <span class="stat note">Base de ${S.gerado ? esc(new Date(S.gerado).toLocaleDateString("pt-BR")) : "data desconhecida"} · ${esc(S.origem)}</span>`;
+    <span class="stat note">Base de ${S.gerado ? esc(new Date(S.gerado).toLocaleDateString("pt-BR")) : "data desconhecida"}, ${esc(S.origem)}</span>`;
 
   // barras: top 12 partidos no recorte (sem o filtro de partido)
   const top = S.porPartido.slice(0, 12), max = top[0]?.[1] || 1;
@@ -358,7 +427,7 @@ function render() {
       ? `<img class="thumb" src="${esc(BASE.replace("prefeitos/", "") + r.foto)}" alt="" loading="lazy" decoding="async" data-ini="${esc((r.prefeito || "?").charAt(0))}">`
       : `<span class="thumb" aria-hidden="true">${esc((r.prefeito || "?").charAt(0))}</span>`;
     const eleicao = `${r.eleicao_data ? esc(String(r.eleicao_data).slice(0, 4)) : "—"}${r.turno === 2 ? `<span class="tag">2º turno</span>` : ""}${r.suplementar ? `<span class="tag sup">suplementar</span>` : ""}`;
-    return `<tr>
+    return `<tr data-cod="${esc(r.codigo_ibge)}">
       <td><a href="${esc(`index.html#/${r.uf}/${r.codigo_ibge}`)}">${esc(r.municipio)}</a></td>
       <td>${esc(r.uf)}</td>
       <td><div class="who">${thumb}<div>${r.prefeito ? esc(r.prefeito) : `<span class="note">${r.uf === "DF" ? "governado pelo governador do DF" : "sem eleito na base do TSE"}</span>`}<div class="full">${esc(r.nome_completo || "")}${r.situacao_mandato === "divergente" ? ` <span class="tag sup" title="IBGE ou Wikidata apontam outra pessoa no cargo">fontes divergem</span>` : ""}</div></div></div></td>
@@ -458,22 +527,223 @@ function ligar() {
   $("#summary").addEventListener("click", e => { if (e.target.closest("#b-div")) { S.f.sit = "divergente"; sincronizarCampos(); atualizar(); } });
   document.addEventListener("error", e => {   // miniatura quebrada vira inicial (CSP sem onerror inline)
     const img = e.target;
+    if (img.tagName === "IMG" && img.classList.contains("f-retrato")) {
+      const d = document.createElement("div"); d.className = "f-retrato"; d.textContent = img.dataset.ini || "?"; img.replaceWith(d); return;
+    }
     if (img.tagName === "IMG" && img.classList.contains("thumb")) {
       const s = document.createElement("span"); s.className = "thumb"; s.textContent = img.dataset.ini || "?"; img.replaceWith(s);
     }
   }, true);
-  window.addEventListener("hashchange", () => { deHash(); sincronizarCampos(); aplicar(); render(); });
+  window.addEventListener("hashchange", () => {
+    deHash(); sincronizarCampos(); aplicar(); render();
+    if (S.fichaPedida && S.fichaPedida !== S.ficha?.r.codigo_ibge) abrirFicha(S.fichaPedida);
+    else if (!S.fichaPedida && S.ficha) fecharFicha();
+  });
 
   const raiz = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
   $("#api-urls").textContent = `${raiz}data/prefeitos/todos.json\n${raiz}data/prefeitos/todos.csv\n${raiz}data/prefeitos/<uf>.json   (detalhe completo, ex.: ce.json)`;
   $("#api-js").textContent = `const r = await fetch("${raiz}data/prefeitos/todos.json");\nconst { registros } = await r.json();\nconst doCeara = registros.filter(p => p.uf === "CE");`;
 }
 
-window.__PREF__ = {S, gerarCSV, gerarJSON, celula, achatar, aplicar, render};
+/* ---------------------------------------------------------------- ficha em modal */
+const capagCache = new Map();
+function capagUF(uf) {
+  if (!capagCache.has(uf)) capagCache.set(uf, getJSON(`./data/capag/${uf.toLowerCase()}.json`, 15000).catch(e => ({erro: e.message})));
+  return capagCache.get(uf);
+}
+const MESES_POS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const fmtPos = (p) => /^\d{4}-\d{2}/.test(p || "") ? `${MESES_POS[+p.slice(5, 7) - 1]}/${p.slice(0, 4)}` : (p || "");
+const SIT = {consistente: "Mandato consistente entre as fontes", divergente: "Fontes divergem sobre o cargo",
+  parcial: "Confirmado por uma fonte", sem_dados: "Sem confirmação de fontes", nao_se_aplica: "Sem prefeito (Distrito Federal)"};
+
+function gruposFicha(r, capag) {
+  const g = (nome, campos, pendente = false) => ({nome, pendente, total: campos.length,
+    ok: pendente ? 0 : campos.filter(c => c[1] != null && c[1] !== "" && c[1] !== false).length,
+    faltando: pendente ? [] : campos.filter(c => c[1] == null || c[1] === "" || c[1] === false).map(c => c[0])});
+  const out = [];
+  if (r.uf !== "DF") out.push(g("Eleição (TSE)", [["prefeito", r.prefeito], ["partido", r.partido], ["data da eleição", r.eleicao_data],
+    ["votos", r.votos_pct], ["vice", r.vice], ["nascimento", r.nascimento], ["bens declarados", r.bens_declarados], ["foto oficial", fotoOk(r.foto) || null]]));
+  out.push(g("Município (IBGE)", [["região intermediária", r.regiao_intermediaria], ["gentílico", r.gentilico], ["população", r.populacao],
+    ["área", r.area_km2], ["densidade", r.densidade], ["PIB per capita", r.pib_per_capita], ["IDHM", r.idhm], ["salário médio", r.salario_medio_sm],
+    ["escolarização", r.escolarizacao_6_14], ["mortalidade infantil", r.mortalidade_infantil]]));
+  out.push(g("Referências (Wikidata)", [["site oficial", r.site_oficial], ["Wikipedia", r.wikipedia], ["prefeito na Wikidata", r.prefeito_wikidata]]));
+  if (r.uf !== "DF") out.push(g("Fiscal (Tesouro)", [["nota CAPAG", capag && capag.ultima ? capag.ultima.capag : null]], capag === undefined));
+  return out;
+}
+
+function seloFicha(grupos) {
+  const total = grupos.reduce((a, g) => a + g.total, 0), ok = grupos.reduce((a, g) => a + g.ok, 0);
+  const R = 42, C = 2 * Math.PI * R; let giro = -90;
+  const arcos = grupos.map(g => {
+    const fatia = 360 * g.total / total, comp = C * (fatia - 7) / 360, cheio = g.pendente ? 0 : comp * g.ok / g.total;
+    const rot = `rotate(${giro.toFixed(2)} 52 52)`; giro += fatia;
+    return `<circle class="arco ${g.pendente ? "pend" : "vazio"}" cx="52" cy="52" r="${R}" stroke-dasharray="${comp.toFixed(2)} ${C.toFixed(2)}" transform="${rot}"/>
+      <circle class="arco cheio" cx="52" cy="52" r="${R}" stroke-dasharray="${cheio.toFixed(2)} ${C.toFixed(2)}" transform="${rot}"/>`;
+  }).join("");
+  const faltam = grupos.flatMap(g => g.faltando);
+  return `<div class="f-selo" title="${esc(faltam.length ? "Faltam: " + faltam.join(", ") : "Todos os dados esperados foram encontrados")}">
+    <svg viewBox="0 0 104 104" role="img" aria-label="${ok} de ${total} dados encontrados">${arcos}
+      <text class="n" x="52" y="56" text-anchor="middle">${ok}</text><text class="de" x="52" y="72" text-anchor="middle">de ${total}</text></svg>
+    <span>dados encontrados${faltam.length ? `<br>faltam ${faltam.length}` : ""}</span></div>`;
+}
+
+function renderFicha() {
+  const F = S.ficha; if (!F) return;
+  const r = F.r, cp = F.capag, i = S.filtrados.findIndex(x => x.codigo_ibge === r.codigo_ibge);
+  const val = (v, fmt) => v == null || v === "" ? `<span class="vazio">não informado</span>` : (fmt ? fmt(v) : esc(v));
+  const pct = (v) => `${fmtN(v, 1)}%`;
+  const u = cp && cp.ultima;
+  const boa = u && u.capag && /^[AB]/.test(u.capag);
+  const foto = fotoOk(r.foto) ? `<img class="f-retrato" src="${esc("./data/" + r.foto)}" alt="Foto de ${esc(r.prefeito || "")}" data-ini="${esc((r.prefeito || "?").charAt(0))}">`
+    : `<div class="f-retrato" aria-hidden="true">${esc((r.prefeito || r.municipio || "?").charAt(0))}</div>`;
+  const ufl = (r.uf || "").toLowerCase(), sl = norm(r.municipio).replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const link = (u, t) => /^https?:\/\//.test(u || "") ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>` : "";
+  let fiscal;
+  if (r.uf === "DF") fiscal = `<p class="note">O Distrito Federal tem regime fiscal de estado.</p>`;
+  else if (cp === undefined) fiscal = `<p class="note">Carregando a CAPAG…</p>`;
+  else if (cp.erro) fiscal = `<p class="note">CAPAG indisponível (${esc(cp.erro)}).</p>`;
+  else if (!u) fiscal = `<p class="note">Município ausente nas posições publicadas pelo Tesouro.</p>`;
+  else fiscal = `<div class="f-capag"><b class="${u.capag ? (boa ? "ok" : "warn") : ""}">${esc(u.capag || "n.d.")}</b>
+      <span class="note">Posição de ${esc(fmtPos(u.posicao))}, ano-base ${esc(u.ano_base)}.<br>${u.capag ? (boa ? "Em regra, elegível a crédito com garantia da União." : "Em regra, não elegível a crédito com garantia da União.") : "Nota não calculada pelo Tesouro."}</span></div>
+    <dl><dt>Endividamento</dt><dd>${val(u.endividamento, v => pct(100 * v))} ${u.nota_endividamento ? `<span class="pt">${esc(u.nota_endividamento)}</span>` : ""}</dd>
+      <dt>Poupança corrente</dt><dd>${val(u.poupanca_corrente, v => pct(100 * v))} ${u.nota_poupanca_corrente ? `<span class="pt">${esc(u.nota_poupanca_corrente)}</span>` : ""}</dd>
+      <dt>Liquidez</dt><dd>${val(u.liquidez, v => pct(100 * v))} ${u.nota_liquidez ? `<span class="pt">${esc(u.nota_liquidez)}</span>` : ""}</dd></dl>
+    ${cp.trajetoria.length > 1 ? `<div class="f-traj">${cp.trajetoria.map(t => `<span>${esc(fmtPos(t.posicao))} <b>${esc(t.capag || "n.d.")}</b></span>`).join("")}</div>` : ""}
+    <p class="note" style="margin:10px 0 0">Fonte: Tesouro Nacional (ODbL). A nota não vincula o Tesouro. Limites da LRF ao vivo no briefing completo.</p>`;
+  const grupos = gruposFicha(r, cp);
+  $("#ficha").innerHTML = `
+    <div class="f-barra"><span class="pos">${i >= 0 ? `${fmtN(i + 1)} de ${fmtN(S.filtrados.length)}<span class="rot"> no filtro atual</span>` : ""}</span>
+      <div class="nav"><button class="f-btn" data-nav="-1" ${i <= 0 ? "disabled" : ""} aria-label="Município anterior">‹<span class="rot"> Anterior</span></button>
+        <button class="f-btn" data-nav="1" ${i < 0 || i >= S.filtrados.length - 1 ? "disabled" : ""} aria-label="Próximo município"><span class="rot">Próximo </span>›</button>
+        <button class="f-btn" data-fechar aria-label="Fechar ficha">✕<span class="rot"> Fechar</span></button></div></div>
+    <div class="f-topo">${foto}
+      <div><p class="f-papel">${r.prefeito ? `Prefeit${r.genero === "Feminino" ? "a" : "o"} de ${esc(r.municipio)}, ${esc(r.uf)}` : `${esc(r.municipio)}, ${esc(r.uf)}`}</p>
+        <h2 class="f-nome" id="f-nome">${esc(r.prefeito || r.municipio)}</h2>
+        <p class="f-sub">${r.nome_completo ? esc(r.nome_completo) : esc(r.uf === "DF" ? "Governado pelo governador do Distrito Federal" : "Sem eleito na base do TSE")}
+          ${r.partido ? ` <span class="pt" title="${esc(r.partido_nome || "")}">${esc(r.partido)}</span>` : ""}</p>
+        <span class="f-pill ${esc(r.situacao_mandato || "")}">${esc(SIT[r.situacao_mandato] || "Situação do mandato não avaliada")}</span></div>
+      ${seloFicha(grupos)}</div>
+    <div class="f-kpis">
+      <div class="f-kpi"><div class="r">População</div><div class="v">${r.populacao != null ? fmtN(r.populacao) : "—"}</div><div class="s">${r.populacao_ano ? `IBGE, ${esc(r.populacao_ano)}` : "IBGE"}</div></div>
+      <div class="f-kpi"><div class="r">PIB per capita</div><div class="v">${r.pib_per_capita != null ? fmtBRL(r.pib_per_capita) : "—"}</div><div class="s">${r.pib_per_capita_ano ? `IBGE, ${esc(r.pib_per_capita_ano)}` : "IBGE"}</div></div>
+      <div class="f-kpi"><div class="r">IDHM</div><div class="v">${r.idhm != null ? fmtN(r.idhm, 3) : "—"}</div><div class="s">${r.idhm_ano ? `PNUD/IBGE, ${esc(r.idhm_ano)}` : "IBGE"}</div></div>
+      <div class="f-kpi"><div class="r">Capacidade de pagamento</div><div class="v ${u && u.capag ? (boa ? "ok" : "warn") : ""}">${r.uf === "DF" ? "—" : cp === undefined ? "…" : esc(u ? (u.capag || "n.d.") : "—")}</div><div class="s">${u ? `CAPAG, ${esc(fmtPos(u.posicao))}` : "CAPAG"}</div></div>
+    </div>
+    <div class="f-corpo">
+      <section class="f-sec"><h3>Mandato</h3><dl>
+        <dt>Eleição</dt><dd>${val(r.eleicao_data, v => `${esc(String(v).slice(8, 10))}/${esc(String(v).slice(5, 7))}/${esc(String(v).slice(0, 4))}${r.turno === 2 ? ", 2º turno" : ""}${r.suplementar ? " (suplementar)" : ""}`)}</dd>
+        <dt>Votos válidos</dt><dd>${val(r.votos_pct, v => `${fmtN(v, 1)}%${r.votos != null ? ` <span class="note">(${fmtN(r.votos)})</span>` : ""}`)}</dd>
+        <dt>Vice</dt><dd>${val(r.vice, v => esc(v) + (r.vice_partido ? ` <span class="note">${esc(r.vice_partido)}</span>` : ""))}</dd>
+        <dt>Idade</dt><dd>${val(r.idade, v => `${v} anos`)}</dd>
+        <dt>Ocupação</dt><dd>${val(r.ocupacao)}</dd>
+        <dt>Instrução</dt><dd>${val(r.instrucao)}</dd>
+        <dt>Bens declarados</dt><dd>${val(r.bens_declarados, v => fmtBRL(v))}</dd></dl></section>
+      <section class="f-sec"><h3>Município</h3><dl>
+        <dt>Região</dt><dd>${val(r.regiao)}</dd>
+        <dt>Região intermediária</dt><dd>${val(r.regiao_intermediaria)}</dd>
+        <dt>Gentílico</dt><dd>${val(r.gentilico)}</dd>
+        <dt>Área</dt><dd>${val(r.area_km2, v => `${fmtN(v, 1)} km²`)}</dd>
+        <dt>Densidade</dt><dd>${val(r.densidade, v => `${fmtN(v, 1)} hab/km²`)}</dd>
+        <dt>Salário médio formal</dt><dd>${val(r.salario_medio_sm, v => `${fmtN(v, 1)} salários mínimos`)}</dd>
+        <dt>Escolarização 6 a 14</dt><dd>${val(r.escolarizacao_6_14, v => pct(v))}</dd>
+        <dt>Mortalidade infantil</dt><dd>${val(r.mortalidade_infantil, v => `${fmtN(v, 1)} por mil`)}</dd></dl></section>
+      <section class="f-sec largo"><h3>Capacidade de pagamento</h3>${fiscal}</section>
+      <section class="f-sec largo"><h3>Referências</h3><div class="f-links">
+        ${link(`https://cidades.ibge.gov.br/brasil/${ufl}/${sl}/panorama`, "IBGE Cidades")}${link(r.site_oficial, "Site oficial")}
+        ${link(r.wikipedia, "Wikipedia")}${r.wikidata ? link(`https://www.wikidata.org/wiki/${r.wikidata}`, "Wikidata") : ""}
+        ${link(`https://hubpolitico.com.br/local/${ufl}/${sl}`, "HubPolítico")}</div></section>
+    </div>
+    <div class="f-rodape"><span class="fontes">Dados do TSE, IBGE, Wikidata e Tesouro Nacional, na base de ${S.gerado ? esc(new Date(S.gerado).toLocaleDateString("pt-BR")) : "data desconhecida"}.</span>
+      <div class="acoes"><button class="f-btn" data-copiar>Copiar link da ficha</button>
+        <a class="primario" href="${esc(`index.html#/${r.uf}/${r.codigo_ibge}`)}">Abrir briefing completo</a></div></div>`;
+}
+
+/** Focáveis do modal em ordem de DOCUMENTO: seletor composto não garante ordem em todo motor. */
+function focaveis() {
+  return [...$("#ficha").querySelectorAll("a[href], button:not([disabled])")]
+    .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+}
+function abrirFicha(cod, gatilho) {
+  const r = S.todos.find(x => x.codigo_ibge === cod);
+  if (!r) return;
+  const ja = !!S.ficha;
+  S.ficha = {r, capag: undefined, gatilho: ja ? S.ficha.gatilho : (gatilho || document.activeElement)};
+  const j = S.filtrados.findIndex(x => x.codigo_ibge === cod), pg = Math.floor(j / POR_PAGINA);
+  if (j >= 0 && pg !== S.pagina) { S.pagina = pg; render(); }   // a tabela acompanha a ficha
+  $("#ficha-fundo").hidden = false;
+  document.body.style.overflow = "hidden";
+  renderFicha(); paraHash();
+  $("#ficha").focus();
+  if (r.uf !== "DF") capagUF(r.uf).then(d => {
+    if (!S.ficha || S.ficha.r !== r) return;   // usuário já navegou para outra ficha
+    if (d.erro) { S.ficha.capag = {erro: d.erro}; }
+    else { const t = (d.municipios || {})[cod] || []; S.ficha.capag = {trajetoria: t, ultima: t.length ? t[t.length - 1] : null}; }
+    renderFicha();
+  });
+}
+function fecharFicha() {
+  if (!S.ficha) return;
+  const g = S.ficha.gatilho, cod = S.ficha.r.codigo_ibge;
+  S.ficha = null;
+  $("#ficha-fundo").hidden = true;
+  document.body.style.overflow = "";
+  paraHash();
+  // foco volta a quem abriu; se a tabela foi redesenhada, ao município visto por último
+  const alvo = (g && document.contains(g) && !$("#ficha-fundo").contains(g)) ? g
+    : document.querySelector(`#tbody tr[data-cod="${cod}"] a`);
+  if (alvo) alvo.focus();
+}
+function navegarFicha(delta) {
+  if (!S.ficha) return;
+  const i = S.filtrados.findIndex(x => x.codigo_ibge === S.ficha.r.codigo_ibge), j = i + delta;
+  if (i < 0 || j < 0 || j >= S.filtrados.length) return;
+  abrirFicha(S.filtrados[j].codigo_ibge);
+}
+function ligarFicha() {
+  const fundo = document.createElement("div");
+  fundo.id = "ficha-fundo"; fundo.className = "ficha-fundo"; fundo.hidden = true;
+  fundo.innerHTML = `<div class="ficha" id="ficha" role="dialog" aria-modal="true" aria-labelledby="f-nome" tabindex="-1"></div>`;
+  document.body.appendChild(fundo);
+  fundo.addEventListener("mousedown", e => { if (e.target === fundo) fecharFicha(); });
+  fundo.addEventListener("click", async e => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.nav) navegarFicha(+t.dataset.nav);
+    else if ("fechar" in t.dataset) fecharFicha();
+    else if ("copiar" in t.dataset) {
+      try { await navigator.clipboard.writeText(location.href); toast("Link da ficha copiado."); } catch { toast("Copie o endereço da barra do navegador."); }
+    }
+  });
+  document.addEventListener("keydown", e => {
+    if (!S.ficha) return;
+    if (e.key === "Escape") { e.preventDefault(); fecharFicha(); }
+    else if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")) {
+      e.preventDefault(); navegarFicha(e.key === "ArrowRight" ? 1 : -1);
+    } else if (e.key === "Tab") {   // foco preso dentro do modal
+      const f = focaveis();
+      if (!f.length) return;
+      const prim = f[0], ult = f[f.length - 1];
+      if (e.shiftKey && (document.activeElement === prim || document.activeElement === $("#ficha"))) { e.preventDefault(); ult.focus(); }
+      else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); prim.focus(); }
+    }
+  });
+  // abrir pela linha; Ctrl/Cmd/Shift-clique ou botão do meio mantêm o comportamento de link
+  $("#tbody").addEventListener("click", e => {
+    const a = e.target.closest("a");
+    if (a && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) return;
+    const tr = e.target.closest("tr[data-cod]"); if (!tr) return;
+    e.preventDefault();
+    abrirFicha(tr.dataset.cod, a || tr);
+  });
+}
+
+window.__PREF__ = {S, gerarCSV, gerarJSON, celula, achatar, aplicar, render, abrirFicha, fecharFicha, gruposFicha, focaveis};
 
 (async () => {
-  ligar(); deHash(); sincronizarCampos();
-  try { await carregar(); aplicar(); render(); }
+  ligar(); ligarFicha(); deHash(); sincronizarCampos();
+  try {
+    await carregar(); aplicar(); render();
+    if (S.fichaPedida) abrirFicha(S.fichaPedida);   // link compartilhado de uma ficha
+  }
   catch (e) { $("#summary").innerHTML = `<span class="empty">Não foi possível carregar os prefeitos: ${esc(e.message)}</span>`; }
 })();
 })();

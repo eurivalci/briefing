@@ -69,6 +69,12 @@ Depois, faça commit de `data/prefeitos/` e push. O Vercel publica sozinho.
 
 **Testes:** `npm i && npm test` (ETL, fotos, consolidado, briefing e listagem). Para as fotos localmente: `pip install pillow && python3 etl/fotos_prefeitos.py`. Para checar só a sintaxe: `npm run check`.
 
+## Interface
+
+**Briefing.** O topo reúne retrato, ficha do prefeito e o **selo de completude**: um anel dividido por fonte (TSE, IBGE, Wikidata, Tesouro) com o total de dados encontrados ao centro. Fonte ainda respondendo aparece como pendente, não como falta, e "O que falta" nomeia cada campo ausente. Abaixo do topo, a faixa de indicadores-chave (população, PIB per capita, CAPAG e pessoal sobre a RCL, com a cor da faixa da LRF) e os painéis por tema.
+
+**Ficha na listagem.** Clicar numa linha abre a ficha do município em modal, com os mesmos blocos em versão compacta e a CAPAG carregada sob demanda. As setas ← → percorrem a ordem do filtro atual (a tabela acompanha a página), `Esc` fecha e devolve o foco, e o endereço ganha `ficha=<código>`, então a ficha aberta pode ser compartilhada por link. Ctrl/Cmd-clique continua abrindo o briefing completo numa nova aba.
+
 ## Uso em outros sistemas
 
 O ETL publica um consolidado nacional em endereço fixo, com CORS liberado:
