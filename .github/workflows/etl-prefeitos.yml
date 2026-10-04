@@ -103,6 +103,16 @@ jobs:
           python3 tests/test_enriquecer.py
           python3 etl/enriquecer_municipios.py
 
+      - name: CAPAG (Tesouro Nacional)
+        # primeira execução baixa todas as posições (~20 MB cada); depois, só as novas
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          pip install --quiet "openpyxl>=3.1"
+          python3 tests/test_capag.py
+          python3 etl/capag.py
+
       - name: Consolidado nacional (todos.json / todos.csv)
         run: |
           python3 tests/test_consolidar.py
@@ -117,6 +127,7 @@ jobs:
             data/prefeitos/_auditoria.json
             data/fotos/_manifest.json
             data/municipios/municipios.json
+            data/capag/_auditoria.json
           if-no-files-found: ignore
           retention-days: 30
 
@@ -128,6 +139,7 @@ jobs:
           git add data/prefeitos
           if [ -d data/fotos ]; then git add data/fotos; fi
           if [ -d data/municipios ]; then git add data/municipios; fi
+          if [ -d data/capag ]; then git add data/capag; fi
           if git diff --cached --quiet; then echo "sem mudanças"; exit 0; fi
           git commit -m "dados: atualiza prefeitos (TSE) $(date -u +%F)"
           # se alguém editou o repositório durante a execução, sincroniza antes de publicar
