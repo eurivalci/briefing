@@ -148,6 +148,8 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
 .f-rodape .primario{background:var(--brass); color:#1b1508; border:0; border-radius:8px; padding:8px 14px; font-weight:600; text-decoration:none; font-size:13.5px}
 .f-rodape .fontes{font-size:11.5px; color:var(--faint); max-width:52ch}
 #tbody tr{cursor:pointer}
+#tbody tr:hover td:first-child a{text-decoration-thickness:2px}
+.dica{font-size:13px; color:var(--muted); margin:0 0 10px}
 @media (max-width:700px){
   .f-barra .rot{display:none}
   .f-btn{min-width:40px; padding:6px 10px}
@@ -205,6 +207,7 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
       <button class="btn" id="b-link">Copiar link deste filtro</button>
     </div>
     <div class="bars" id="bars" aria-label="Prefeitos por partido"></div>
+    <p class="dica" id="dica">Clique em um município para abrir a ficha completa. Use ← → para percorrer a lista com a ficha aberta. Ctrl ou Cmd + clique abre o briefing em nova aba.</p>
     <div class="tablewrap"><table>
       <thead><tr id="thead"></tr></thead>
       <tbody id="tbody"></tbody>
@@ -607,7 +610,9 @@ function renderFicha() {
       <span class="note">Posição de ${esc(fmtPos(u.posicao))}, ano-base ${esc(u.ano_base)}.<br>${u.capag ? (boa ? "Em regra, elegível a crédito com garantia da União." : "Em regra, não elegível a crédito com garantia da União.") : "Nota não calculada pelo Tesouro."}</span></div>
     <dl><dt>Endividamento</dt><dd>${val(u.endividamento, v => pct(100 * v))} ${u.nota_endividamento ? `<span class="pt">${esc(u.nota_endividamento)}</span>` : ""}</dd>
       <dt>Poupança corrente</dt><dd>${val(u.poupanca_corrente, v => pct(100 * v))} ${u.nota_poupanca_corrente ? `<span class="pt">${esc(u.nota_poupanca_corrente)}</span>` : ""}</dd>
-      <dt>Liquidez</dt><dd>${val(u.liquidez, v => pct(100 * v))} ${u.nota_liquidez ? `<span class="pt">${esc(u.nota_liquidez)}</span>` : ""}</dd></dl>
+      <dt>Liquidez</dt><dd>${val(u.liquidez, v => pct(100 * v))} ${u.nota_liquidez ? `<span class="pt">${esc(u.nota_liquidez)}</span>` : ""}</dd>
+      ${u.qualidade_informacao != null ? `<dt>Qualidade da informação (ICF)</dt><dd>${esc(u.qualidade_informacao)}</dd>` : ""}</dl>
+    ${u.origem_nota || u.observacao ? `<p class="note" style="margin:8px 0 0">${u.origem_nota ? `Origem da nota final: ${esc(u.origem_nota)}.` : ""}${u.observacao ? ` ${esc(u.observacao)}` : ""}</p>` : ""}
     ${cp.trajetoria.length > 1 ? `<div class="f-traj">${cp.trajetoria.map(t => `<span>${esc(fmtPos(t.posicao))} <b>${esc(t.capag || "n.d.")}</b></span>`).join("")}</div>` : ""}
     <p class="note" style="margin:10px 0 0">Fonte: Tesouro Nacional (ODbL). A nota não vincula o Tesouro. Limites da LRF ao vivo no briefing completo.</p>`;
   const grupos = gruposFicha(r, cp);

@@ -970,8 +970,9 @@ function rCapag() {
       ${linha("Endividamento", u.endividamento, u.nota_endividamento, "dívida consolidada ÷ RCL")}
       ${linha("Poupança corrente", u.poupanca_corrente, u.nota_poupanca_corrente, "despesa corrente ÷ receita corrente ajustada")}
       ${linha("Liquidez", u.liquidez, u.nota_liquidez, "obrigações financeiras ÷ caixa")}
-      ${u.qualidade_informacao != null ? `<dt>Qualidade da informação<span class="def">ranking do Tesouro</span></dt><dd>${esc(u.qualidade_informacao)}</dd>` : ""}
+      ${u.qualidade_informacao != null ? `<dt>Qualidade da informação<span class="def">ICF, ranking do Tesouro</span></dt><dd>${esc(u.qualidade_informacao)}</dd>` : ""}
     </dl>
+    ${u.origem_nota || u.observacao ? `<p class="note" style="margin:10px 0 0">${u.origem_nota ? `Origem da nota final: ${esc(u.origem_nota)}.` : ""}${u.observacao ? ` ${esc(u.observacao)}${/[.!?]$/.test(u.observacao) ? "" : "."}` : ""}</p>` : ""}
     ${t.length > 1 ? `<div class="traj" aria-label="Trajetória da nota">${t.map(x => `<span title="ano-base ${esc(x.ano_base)}">${esc(fmtPos(x.posicao))} <b>${esc(x.capag || "n.d.")}</b></span>`).join("")}</div>` : ""}
     <p class="attrib">${esc(d.aviso || "")} Fonte: Tesouro Nacional, dados sob licença ODbL.</p></div>`;
 }
