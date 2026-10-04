@@ -218,6 +218,31 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   assert(/2º quadrimestre/.test(fisc), "período do RGF");
   assert(CHAMADAS_RGF.length >= 2 && CHAMADAS_RGF.every(u => /nr_periodo=2/.test(u) && /co_poder=E/.test(u)), "RGF do Executivo, não o da Câmara");
   assert(/RCL ajustada: R\$\s?10\.000\.000\.000/.test(fisc), "RCL");
+  // selo de completude e indicadores-chave
+  if (BM().S.secoes.ind.status === "carregando") {
+    const parcial = BM().completude();
+    assert(parcial.grupos.find(x => x.nome === "Município (IBGE)").pendente, "fonte respondendo é pendente, não falta");
+    assert(/Consultando as fontes/.test(d.querySelector("#s-selo").textContent));
+  }
+  await esperar(w, () => BM().S.secoes.ind.status === "ok", 4000, "indicadores");
+  await sleep(30);
+  const comp = BM().completude();
+  const g = Object.fromEntries(comp.grupos.map(x => [x.nome, x]));
+  assert.strictEqual(g["Eleição (TSE)"].ok, 8, "TSE completo, inclusive foto");
+  assert.strictEqual(g["Município (IBGE)"].ok, 9, "IBGE: mortalidade (HTTP 500) falta");
+  assert.strictEqual(JSON.stringify(g["Município (IBGE)"].faltando), '["mortalidade infantil"]');
+  assert.strictEqual(g["Fiscal (Tesouro)"].ok, 4);
+  assert.strictEqual(comp.ok, 24); assert.strictEqual(comp.total, 25);
+  assert.strictEqual(d.querySelector("#s-selo .selo .n").textContent, "24", "número no centro do selo");
+  assert(/de 25/.test(d.querySelector("#s-selo").textContent) && /mortalidade infantil/.test(d.querySelector("#s-selo details").textContent), "o que falta, nomeado");
+  assert.strictEqual(d.querySelectorAll("#s-selo circle.cheio").length, 4, "um arco por fonte");
+  const kpis = [...d.querySelectorAll("#s-kpi .kpi")].map(k => k.textContent.replace(/\s+/g, " ").trim());
+  assert.strictEqual(kpis.length, 4);
+  assert(/População\s*2\.428\.708\s*IBGE, 2022/.test(kpis[0]), kpis[0]);
+  assert(/Capacidade de pagamento\s*B\s*CAPAG, set\/2026/.test(kpis[2]) && d.querySelector("#s-kpi .kpi:nth-child(3) .k-val.ok"), kpis[2]);
+  assert(/49,7%/.test(kpis[3]) && d.querySelector("#s-kpi .kpi:nth-child(4) .k-val.alerta-k"), "pessoal em faixa de alerta na cor de alerta");
+  assert(!/·/.test(d.querySelector("#doc").textContent), "sem separadores de template");
+
   // leituras alternativas
   const LP = BM().lerPessoal, LD = BM().lerDCL;
   assert(Math.abs(LP([{conta: "DESPESA TOTAL COM PESSOAL - DTP", coluna: "% SOBRE A RCL", valor: 0.4973}]).pct - 49.73) < 1e-9, "fração vira %");
@@ -278,6 +303,9 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   d.querySelector(".uf[data-uf=DF]").click();
   await esperar(w, () => /Distrito Federal não tem prefeito/.test(d.querySelector("#s-gov")?.textContent || ""), 3000, "DF");
   assert(/regime fiscal de estado/.test(d.querySelector("#s-fisc").textContent), "DF sem seção fiscal municipal");
+  await sleep(100);
+  assert(!BM().completude().grupos.some(x => /TSE|Tesouro/.test(x.nome)), "DF: selo sem grupos que não se aplicam");
+  assert(/não se aplica ao DF/.test(d.querySelector("#s-kpi").textContent));
   await sleep(100);
   assert(/não se aplica/.test(d.querySelector("#s-fontes").textContent), "TSE não se aplica ao DF");
   assert(!chamadas.some(u => u.includes("data/prefeitos/df.json") && false));

@@ -181,6 +181,82 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   assert.deepStrictEqual(erros, []);
   w.close();
 
+  // ================= ficha em modal
+  const CAPAG_CE = {municipios: {"2300001": [{posicao: "2026-06-01", ano_base: 2025, capag: "C"},
+    {posicao: "2026-09-01", ano_base: 2025, capag: "B", endividamento: 0.352, nota_endividamento: "A"}]}};
+  const comCapag = (u) => u.includes("todos.json") ? TODOS : u.includes("capag/ce.json") ? CAPAG_CE : null;
+  ({w, d, erros} = montar("http://app.local/prefeitos.html", comCapag));
+  await esperar(() => linhas(d).length === 50, 3000, "lista para a ficha");
+  const fundo = () => d.querySelector("#ficha-fundo");
+  assert(fundo().hidden, "modal começa fechado");
+  // abre pela linha (clique no nome do município)
+  const ancora = d.querySelector('#tbody tr[data-cod="2300001"] a') || linhas(d).find(l => l.dataset.cod === "2300001")?.querySelector("a");
+  ancora.focus(); ancora.click();
+  assert(!fundo().hidden, "abre ao clicar na linha");
+  assert.strictEqual(d.querySelector("#f-nome").textContent, "Prefeito 1");
+  assert(/ficha=2300001/.test(w.location.hash), "link próprio da ficha");
+  assert.strictEqual(d.body.style.overflow, "hidden", "rolagem da página travada");
+  assert.strictEqual(d.activeElement, d.querySelector("#ficha"), "foco vai para o modal");
+  await esperar(() => /Posição de set\/2026/.test(d.querySelector("#ficha").textContent), 2000, "CAPAG na ficha");
+  const fic = d.querySelector("#ficha").textContent.replace(/\s+/g, " ");
+  assert(/jun\/2026 C/.test(fic) && /35,2%/.test(fic) && /elegível/.test(fic), "CAPAG e trajetória");
+  assert(/Mandato consistente/.test(fic) && /3\.000/.test(fic), "situação do mandato e população");
+  assert(/não informado/.test(fic), "campo ausente dito como ausente");
+  const pos1 = d.querySelector("#ficha .pos").textContent;
+  // setas navegam pela ordem filtrada
+  const idx0 = P().S.filtrados.findIndex(r => r.codigo_ibge === "2300001");
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
+  assert.strictEqual(P().S.ficha.r.codigo_ibge, P().S.filtrados[idx0 + 1].codigo_ibge, "seta direita = próximo");
+  assert.notStrictEqual(d.querySelector("#ficha .pos").textContent, pos1);
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
+  assert.strictEqual(P().S.ficha.r.codigo_ibge, "2300001");
+  // navegar além da página leva a tabela junto
+  P().abrirFicha(P().S.filtrados[49].codigo_ibge);
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
+  assert(/51–100/.test(txt(d, "#pager")), "a tabela acompanha a ficha para a página 2");
+  // primeiro item: "Anterior" desabilitado
+  P().abrirFicha(P().S.filtrados[0].codigo_ibge);
+  assert(d.querySelector('#ficha [data-nav="-1"]').disabled);
+  // foco preso: Tab no último elemento volta ao primeiro
+  const foc = P().focaveis();
+  assert.strictEqual(foc[0].tagName, "BUTTON", "primeiro focável é o da barra (ordem de documento)");
+  assert.strictEqual(foc[foc.length - 1].textContent, "Abrir briefing completo", "último é a ação principal");
+  foc[foc.length - 1].focus();
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "Tab", bubbles: true}));
+  assert.strictEqual(d.activeElement, foc[0], "Tab circula dentro do modal");
+  // Esc fecha e devolve o foco a quem abriu
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+  assert(fundo().hidden && !/ficha=/.test(w.location.hash) && d.body.style.overflow === "", "Esc fecha e limpa o link");
+  const ultimo = d.querySelector(`#tbody tr[data-cod="${P().S.filtrados[0].codigo_ibge}"] a`);
+  assert.strictEqual(d.activeElement, ultimo, "tabela redesenhada: foco volta ao município visto por último");
+  // caso simples: abrir e fechar sem navegar devolve o foco ao próprio link
+  const a2 = d.querySelector("#tbody tr[data-cod] a"); a2.focus(); a2.click();
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+  assert.strictEqual(d.activeElement, a2, "foco volta ao link que abriu a ficha");
+  // Ctrl-clique mantém o comportamento de link (nova aba), sem modal
+  const ev = new w.MouseEvent("click", {bubbles: true, cancelable: true, ctrlKey: true});
+  a2.dispatchEvent(ev);
+  assert(fundo().hidden, "Ctrl-clique não abre o modal");
+  // completude da ficha: DF sem grupos que não se aplicam
+  const gDF = P().gruposFicha(P().S.todos.find(r => r.uf === "DF"), undefined);
+  assert(!gDF.some(g => /TSE|Tesouro/.test(g.nome)), "DF sem eleição e sem fiscal no selo");
+  const g1 = P().gruposFicha(P().S.todos.find(r => r.codigo_ibge === "2300001"), {ultima: {capag: "B"}});
+  assert.strictEqual(g1.find(g => g.nome === "Fiscal (Tesouro)").ok, 1);
+  assert(g1.find(g => g.nome === "Fiscal (Tesouro)").pendente === false);
+  assert.deepStrictEqual(erros, [], "sem exceções na página");
+  w.close();
+
+  // ================= link direto para a ficha + escape de HTML
+  const TODOS_XSS = JSON.parse(JSON.stringify(TODOS));
+  TODOS_XSS.registros[0].prefeito = "<img src=x onerror=alert(1)>";
+  ({w, d, erros} = montar("http://app.local/prefeitos.html#ficha=2300001", u => u.includes("todos.json") ? TODOS_XSS : null));
+  await esperar(() => d.querySelector("#ficha-fundo") && !d.querySelector("#ficha-fundo").hidden, 3000, "ficha pelo link");
+  assert(!d.querySelector("#ficha img[src='x']") && /&lt;img/.test(d.querySelector("#f-nome").innerHTML), "nome escapado");
+  await esperar(() => /CAPAG indisponível/.test(d.querySelector("#ficha").textContent), 2000, "erro de CAPAG explicado");
+  assert(!w.__alerta);
+  assert.deepStrictEqual(erros, []);
+  w.close();
+
   // ================= caminho 2: sem consolidado, monta a partir dos arquivos por UF
   const uf = (sigla, muns) => ({uf: sigla, gerado_em: "2026-09-30T00:00:00Z", municipios: muns});
   const reg = (nm, urna, pt) => ({tse: {sg_ue: "1", nm_ue: nm}, eleicao: {ano: 2024, data: "2024-10-06", turno: 1, suplementar: false},

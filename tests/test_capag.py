@@ -187,7 +187,7 @@ def testar_ponta_a_ponta():
     traj = ce["municipios"][FORT]
     assert [t["posicao"] for t in traj] == ["2021", "2026-06-01", "2026-09-01"], traj
     assert [t["capag"] for t in traj] == ["C", "C", "B"] and traj[-1]["ano_base"] == 2025
-    assert (tmp / "capag" / "pb.json").exists() and CODS[110] in json.loads((tmp / "capag" / "pb.json").read_text())["municipios"]
+    assert CODS[110] in json.loads((tmp / "capag" / "ce.json").read_text())["municipios"], "UF pelo prefixo 23"
     aud = json.loads((tmp / "capag" / "_auditoria.json").read_text(encoding="utf-8"))
     assert [x["posicao"] for x in aud["ignoradas"]] == ["CAPAG Municípios 2020"], "0 bytes ignorado"
     assert [x["posicao"] for x in aud["falhas"]] == ["Capag Municípios 2025 - 19/02/2025"]
@@ -207,6 +207,15 @@ def testar_ponta_a_ponta():
     assert "/f/2026-set.xlsx" in ARQS["baixados"]
     assert json.loads((tmp / "capag" / "ce.json").read_text())["municipios"][FORT][-1]["capag"] == "A"
     assert not list((tmp / "capag").rglob("*.tmp"))
+    assert sorted(json.loads((tmp / "capag" / "_auditoria.json").read_text())["arquivos_por_uf"]) == ["CE"], \
+        "a UF vem do prefixo do código (23 = CE), não do cadastro"
+
+    # sem cadastro de municípios: ainda grava os arquivos por UF (antes: "OK" sem gravar nada)
+    t2 = Path(tempfile.mkdtemp())
+    args2 = ["--out", str(t2 / "capag"), "--municipios", str(t2 / "nao-existe.json"), "--ckan", base + "/ckan"]
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        assert K.main(args2) == 0
+    assert (t2 / "capag" / "ce.json").exists(), "arquivo por UF gravado mesmo sem cadastro"
     srv.shutdown()
 
 
