@@ -116,32 +116,54 @@ def ultimo_valor(serie: dict, numerico: bool):
     return None, None
 
 
-def resultados_em_lote(pesquisa: int, indicador: int, codigos: list[str], numerico: bool,
-                       lote: int = 100, paralelo: int = 6) -> tuple[dict, dict]:
-    """{codigo: (valor, ano)} para todos os códigos, com divisão adaptativa do lote."""
-    resultado, estat = {}, {"chamadas": 0, "falhas": 0, "divisoes": 0}
+def suporta_lote(amostra: list[str]) -> bool:
+    """Sonda UMA vez se a API de Pesquisas aceita vários municípios por chamada ("a|b")."""
+    if len(amostra) < 2:
+        return False
+    try:
+        d = get_json(f"{IBGE}/pesquisas/33/indicadores/29171/resultados/{'|'.join(amostra[:2])}", timeout=60, tentativas=2)
+        locs = {str(x.get("localidade")) for x in (d[0].get("res") if d else []) or []}
+        return set(amostra[:2]) <= locs
+    except Exception:  # noqa: BLE001
+        return False
 
-    def pedir(grupo: list[str]):
-        url = f"{IBGE}/pesquisas/{pesquisa}/indicadores/{indicador}/resultados/{'|'.join(grupo)}"
+
+def resultados_em_lote(pesquisa: int, indicador: int, codigos: list[str], numerico: bool,
+                       lote: int = 100, paralelo: int = 6, com_lote: bool = True) -> tuple[dict, dict]:
+    """{codigo: (valor, ano)}. Com lote: grupos de até 100; um lote que falhar é refeito
+    município a município UMA vez (sem cascata de divisões). Sem lote: um por chamada."""
+    resultado, estat = {}, {"chamadas": 0, "falhas": 0, "modo": "lote" if com_lote else "unitario"}
+
+    def um(c: str):
         estat["chamadas"] += 1
         try:
-            d = get_json(url, timeout=90, tentativas=2)
+            d = get_json(f"{IBGE}/pesquisas/{pesquisa}/indicadores/{indicador}/resultados/{c}", timeout=60, tentativas=2)
             res = {str(x.get("localidade")): x.get("res") for x in (d[0].get("res") if d else []) or []}
-            # lote que volta sem nenhum dos pedidos é tratado como lote não suportado
-            if len(grupo) > 1 and not any(c in res for c in grupo):
-                raise ValueError("lote sem resultado")
-            return [(c, ultimo_valor(res.get(c), numerico)) for c in grupo]
-        except Exception:  # noqa: BLE001 - divide e tenta de novo
-            if len(grupo) == 1:
-                estat["falhas"] += 1
-                return [(grupo[0], (None, None))]
-            estat["divisoes"] += 1
-            meio = len(grupo) // 2
-            return pedir(grupo[:meio]) + pedir(grupo[meio:])
+            return [(c, ultimo_valor(res.get(c), numerico))]
+        except Exception:  # noqa: BLE001
+            estat["falhas"] += 1
+            return [(c, (None, None))]
 
-    grupos = [codigos[i:i + lote] for i in range(0, len(codigos), lote)]
-    with ThreadPoolExecutor(max_workers=paralelo) as ex:
-        for parte in ex.map(pedir, grupos):
+    def grupo(g: list[str]):
+        estat["chamadas"] += 1
+        try:
+            d = get_json(f"{IBGE}/pesquisas/{pesquisa}/indicadores/{indicador}/resultados/{'|'.join(g)}", timeout=90, tentativas=2)
+            res = {str(x.get("localidade")): x.get("res") for x in (d[0].get("res") if d else []) or []}
+            if not any(c in res for c in g):
+                raise ValueError("lote sem resultado")
+            return [(c, ultimo_valor(res.get(c), numerico)) for c in g]
+        except Exception:  # noqa: BLE001
+            out = []
+            for c in g:
+                out += um(c)
+            return out
+
+    if com_lote:
+        tarefas, fn, workers = [codigos[i:i + lote] for i in range(0, len(codigos), lote)], grupo, paralelo
+    else:
+        tarefas, fn, workers = [[c] for c in codigos], (lambda g: um(g[0])), max(paralelo, 16)
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for parte in ex.map(fn, tarefas):
             for c, va in parte:
                 resultado[c] = va
     return resultado, estat
@@ -207,110 +229,122 @@ def main(argv=None):
     global IBGE, WDQS
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default=str(RAIZ / "data" / "municipios" / "municipios.json"))
-    ap.add_argument("--max-dias", type=float, default=6, help="reaproveita o arquivo se for mais novo que isso")
+    ap.add_argument("--max-dias", type=float, default=6, help="campo atualizado há menos que isso não é buscado de novo")
     ap.add_argument("--forcar", action="store_true")
     ap.add_argument("--lote", type=int, default=100)
     ap.add_argument("--paralelo", type=int, default=6)
+    ap.add_argument("--limite-minutos", type=float, default=15,
+                    help="encerra de forma limpa (salvando) e continua na próxima execução; 0 = sem limite")
     ap.add_argument("--ibge-base", default=IBGE, help=argparse.SUPPRESS)       # testes
     ap.add_argument("--wikidata-url", default=WDQS, help=argparse.SUPPRESS)    # testes
     args = ap.parse_args(argv)
     IBGE, WDQS = args.ibge_base, args.wikidata_url
+    t0 = time.monotonic()
+    estourou = lambda: bool(args.limite_minutos) and (time.monotonic() - t0) > args.limite_minutos * 60  # noqa: E731
 
     destino = Path(args.out)
     destino.parent.mkdir(parents=True, exist_ok=True)
     anterior = json.loads(destino.read_text(encoding="utf-8")) if destino.exists() else {}
-    if anterior and not args.forcar:
-        idade = (datetime.now(timezone.utc) - datetime.fromisoformat(anterior["gerado_em"])).total_seconds() / 86400
-        if idade < args.max_dias:
-            print(f"arquivo com {idade:.1f} dias (< {args.max_dias}); nada a fazer. Use --forcar para refazer.")
-            return 0
-
     ant_mun = anterior.get("municipios", {})
-    status, t0 = {}, time.monotonic()
+    status = dict(anterior.get("status", {}))   # status por fonte, com a data da última atualização
+    agora_iso = lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")  # noqa: E731
+
+    def fresco(fonte: str) -> bool:
+        st = status.get(fonte) or {}
+        if args.forcar or not st.get("ok") or not st.get("atualizado_em"):
+            return False
+        idade = (datetime.now(timezone.utc) - datetime.fromisoformat(st["atualizado_em"])).total_seconds() / 86400
+        return idade < args.max_dias
 
     # 1) cadastro: sem ele não há lista de códigos; se falhar, usa o anterior
-    try:
-        cad = localidades()
-        status["localidades"] = {"ok": True, "municipios": len(cad)}
-    except Exception as exc:  # noqa: BLE001
-        if not ant_mun:
-            raise SystemExit(f"IBGE Localidades indisponível e sem arquivo anterior: {exc}")
-        cad = {c: {k: m.get(k) for k in ("nome", "uf", "regiao", "regiao_intermediaria", "regiao_imediata")}
-               for c, m in ant_mun.items()}
-        status["localidades"] = {"ok": False, "erro": str(exc), "retido": True}
-    codigos = sorted(cad)
-    mun = {c: dict(cad[c]) for c in codigos}
-
-    def reter(campos: list[str], fonte: str, exc):
-        n = 0
-        for c in codigos:
-            for k in campos:
-                if k in ant_mun.get(c, {}):
-                    mun[c][k] = ant_mun[c][k]
-                    n += 1
-        status[fonte] = {"ok": False, "erro": str(exc), "retido": True, "valores_retidos": n}
-
-    # 2) indicadores numéricos
-    for campo, pesquisa, ind, unidade in INDICADORES:
+    if fresco("localidades") and ant_mun:
+        cad = {c: {k: m.get(k) for k in ("nome", "uf", "regiao", "regiao_intermediaria", "regiao_imediata")} for c, m in ant_mun.items()}
+    else:
         try:
-            res, est = resultados_em_lote(pesquisa, ind, codigos, True, args.lote, args.paralelo)
-            preenchidos = sum(1 for v, _ in res.values() if v is not None)
-            if preenchidos == 0:
-                raise RuntimeError("nenhum valor retornado")
-            for c in codigos:
-                v, ano = res.get(c, (None, None))
-                mun[c][campo], mun[c][f"{campo}_ano"] = v, ano
-            status[campo] = {"ok": True, "preenchidos": preenchidos, "unidade": unidade, **est}
+            cad = localidades()
+            status["localidades"] = {"ok": True, "municipios": len(cad), "atualizado_em": agora_iso()}
         except Exception as exc:  # noqa: BLE001
-            reter([campo, f"{campo}_ano"], campo, exc)
-        print(f"[ibge] {campo}: {status[campo]}", flush=True)
+            if not ant_mun:
+                raise SystemExit(f"IBGE Localidades indisponível e sem arquivo anterior: {exc}")
+            cad = {c: {k: m.get(k) for k in ("nome", "uf", "regiao", "regiao_intermediaria", "regiao_imediata")}
+                   for c, m in ant_mun.items()}
+            status["localidades"] = {**status.get("localidades", {}), "ok": False, "erro": str(exc), "retido": True}
+    codigos = sorted(cad)
+    # começa do arquivo anterior: o que não for atualizado agora continua valendo
+    mun = {c: {**ant_mun.get(c, {}), **cad[c]} for c in codigos}
 
-    # 3) campos de texto do painel (prefeito e gentílico)
-    try:
-        ids = descobrir_texto()
-    except Exception as exc:  # noqa: BLE001
-        ids = {"prefeito_ibge": None, "gentilico": None}
-        status["painel_meta"] = {"ok": False, "erro": str(exc)}
-    for campo, ind in ids.items():
+    def gravar():
+        doc = {"gerado_em": agora_iso(),
+               "fontes": {"ibge": "servicodados.ibge.gov.br (Localidades e Pesquisas)", "wikidata": "query.wikidata.org (CC0)"},
+               "status": status, "total": len(mun), "municipios": mun}
+        tmp = destino.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        tmp.replace(destino)
+
+    def falhou(fonte, exc):
+        status[fonte] = {**status.get(fonte, {}), "ok": False, "erro": str(exc), "retido": True}
+
+    gravar()   # já salva o cadastro: mesmo que o resto falhe, o consolidado tem nome e região
+
+    # 2) Wikidata: uma consulta para o país inteiro, rápida
+    campos_wd = ["wikidata", "site_oficial", "wikipedia", "prefeito_wikidata", "prefeito_wikidata_desde"]
+    if not fresco("wikidata"):
+        try:
+            wd = wikidata()
+            for c in codigos:
+                for k in campos_wd:
+                    mun[c][k] = (wd.get(c) or {}).get(k)
+            status["wikidata"] = {"ok": True, "itens": sum(1 for c in codigos if c in wd), "atualizado_em": agora_iso()}
+        except Exception as exc:  # noqa: BLE001
+            falhou("wikidata", exc)
+        gravar()
+        print(f"[wikidata] {status['wikidata']}", flush=True)
+
+    # 3) indicadores (população primeiro) e campos de texto do painel — só o que estiver vencido
+    tarefas = [(campo, pesquisa, ind, True, unidade) for campo, pesquisa, ind, unidade in INDICADORES if not fresco(campo)]
+    texto = [c for c in ("prefeito_ibge", "gentilico") if not fresco(c)]
+    com_lote = False
+    if tarefas or texto:
+        com_lote = suporta_lote(codigos)
+        print(f"[ibge] API de Pesquisas {'aceita' if com_lote else 'NÃO aceita'} lote; modo {'lote' if com_lote else 'unitário'}", flush=True)
+    if texto:
+        try:
+            ids_texto = descobrir_texto()
+        except Exception as exc:  # noqa: BLE001
+            ids_texto = {"prefeito_ibge": None, "gentilico": None}
+            status["painel_meta"] = {"ok": False, "erro": str(exc)}
+        tarefas += [(campo, 33, ids_texto.get(campo), False, None) for campo in texto]
+    adiados = []
+    for campo, pesquisa, ind, numerico, unidade in tarefas:
+        if estourou():
+            adiados.append(campo)
+            continue
         try:
             if not ind:
                 raise RuntimeError("indicador não localizado na pesquisa 33")
-            res, est = resultados_em_lote(33, ind, codigos, False, args.lote, args.paralelo)
-            if not any(v for v, _ in res.values()):
-                raise RuntimeError("nenhum valor retornado")   # mesma trava dos numéricos: falha não apaga
+            res, est = resultados_em_lote(pesquisa, ind, codigos, numerico, args.lote, args.paralelo, com_lote)
+            preenchidos = sum(1 for v, _ in res.values() if v not in (None, ""))
+            if preenchidos == 0:
+                raise RuntimeError("nenhum valor retornado")   # falha não apaga o que já existe
             for c in codigos:
                 v, ano = res.get(c, (None, None))
                 mun[c][campo] = v
-                if campo == "prefeito_ibge":
+                if numerico:
+                    mun[c][f"{campo}_ano"] = ano
+                elif campo == "prefeito_ibge":
                     mun[c]["prefeito_ibge_ano"] = ano
-            status[campo] = {"ok": True, "indicador": ind, "preenchidos": sum(1 for v, _ in res.values() if v), **est}
+            status[campo] = {"ok": True, "preenchidos": preenchidos, "unidade": unidade, "atualizado_em": agora_iso(), **est}
         except Exception as exc:  # noqa: BLE001
-            reter([campo] + (["prefeito_ibge_ano"] if campo == "prefeito_ibge" else []), campo, exc)
+            falhou(campo, exc)
+        gravar()   # checkpoint por indicador
         print(f"[ibge] {campo}: {status[campo]}", flush=True)
 
-    # 4) Wikidata
-    campos_wd = ["wikidata", "site_oficial", "wikipedia", "prefeito_wikidata", "prefeito_wikidata_desde"]
-    try:
-        wd = wikidata()
-        for c in codigos:
-            for k in campos_wd:
-                mun[c][k] = (wd.get(c) or {}).get(k)
-        status["wikidata"] = {"ok": True, "itens": sum(1 for c in codigos if c in wd)}
-    except Exception as exc:  # noqa: BLE001
-        reter(campos_wd, "wikidata", exc)
-    print(f"[wikidata] {status['wikidata']}", flush=True)
-
-    doc = {
-        "gerado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "fontes": {"ibge": "servicodados.ibge.gov.br (Localidades e Pesquisas)", "wikidata": "query.wikidata.org (CC0)"},
-        "status": status, "total": len(mun), "municipios": mun,
-    }
-    tmp = destino.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    tmp.replace(destino)
-    falhas = [k for k, s in status.items() if not s.get("ok")]
+    if adiados:
+        print(f"[limite] {args.limite_minutos} min atingidos; adiados para a próxima execução: {', '.join(adiados)}", flush=True)
+    falhas = [k for k, st in status.items() if not st.get("ok")]
     print(f"OK: {len(mun)} municípios em {time.monotonic() - t0:.0f}s"
-          + (f" — fontes com falha (valores anteriores mantidos): {', '.join(falhas)}" if falhas else ""))
+          + (f" — fontes com falha (valores anteriores mantidos): {', '.join(falhas)}" if falhas else "")
+          + (f" — adiados: {len(adiados)}" if adiados else ""))
     return 0
 
 

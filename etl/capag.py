@@ -270,9 +270,16 @@ def ler_planilha(caminho_ou_bytes, validos: set[str]) -> tuple[dict[str, dict], 
                 mapa[f"nota_{g}"] = c
                 usados.add(c)
     q = next((c for c in range(largura) if perfis[c]["n"] and c not in usados
-              and ("qualidade" in cab[c] or "ranking" in cab[c])), None)
+              and ("qualidade" in cab[c] or "ranking" in cab[c] or "icf" in cab[c].split())), None)
     if q is not None:
         mapa["qualidade_informacao"] = q
+        usados.add(q)
+    # colunas de texto da planilha oficial: "Observação" e "Origem da Nota Final"
+    for chave, termo in (("observacao", "observa"), ("origem_nota", "origem")):
+        c = next((c for c in range(largura) if perfis[c]["n"] and c not in usados and termo in cab[c]), None)
+        if c is not None:
+            mapa[chave] = c
+            usados.add(c)
 
     regs = {}
     for r in dados:
@@ -290,6 +297,11 @@ def ler_planilha(caminho_ou_bytes, validos: set[str]) -> tuple[dict[str, dict], 
         if "qualidade_informacao" in mapa:
             qv = r[mapa["qualidade_informacao"]]
             reg["qualidade_informacao"] = qv if isinstance(qv, (int, float)) else (str(qv).strip() if qv else None)
+        for chave in ("observacao", "origem_nota"):
+            if chave in mapa:
+                tv = r[mapa[chave]]
+                tv = str(tv).strip() if tv not in (None, "") else None
+                reg[chave] = tv if tv and tv not in ("-", "--") else None
         regs[cod] = reg
     # escala é da COLUNA: mediana > 5 significa que a planilha publicou em por cento (35,2), não em fração (0,352)
     escalas = {}
