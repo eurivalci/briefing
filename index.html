@@ -253,6 +253,11 @@ details.brutos pre{max-height:280px; overflow:auto; background:var(--ink); borde
   .kv{grid-template-columns:minmax(92px,max-content) minmax(0,1fr); gap:6px 12px}
   .painel{padding:16px}
 }
+/* modo incorporado: o briefing dentro da ficha da listagem */
+html.embed .rail, html.embed .toolbar{display:none}
+html.embed .app{grid-template-columns:1fr}
+html.embed main{padding:18px clamp(14px,3vw,28px) 40px}
+html.embed .doc{max-width:none}
 @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
 @media print{
   :root{--ink:#fff; --sheet:#fff; --surface:#fff; --raise:#f4f4f4; --line:#ccc; --line-soft:#ddd; --text:#111; --muted:#444; --faint:#666; --brass:#7a5a12}
@@ -305,6 +310,10 @@ details.brutos pre{max-height:280px; overflow:auto; background:var(--ink); borde
 <script>
 "use strict";
 (function () {
+
+/* ================================================================ modo incorporado */
+const EMBED = new URLSearchParams(location.search).get("embed") === "1";
+if (EMBED) document.documentElement.classList.add("embed");
 
 /* ================================================================ configuração */
 const CONFIG = {
@@ -1473,6 +1482,14 @@ function ligarEventos() {
     if (ok) { toast(`${ok} arquivo(s) do TSE importado(s).`); atualizarStatusTSE(); if (S.cod) abrirMunicipio(S.uf, S.cod); }
   });
   window.addEventListener("hashchange", lerHash);
+  // incorporado: Esc e setas também funcionam com o foco dentro do briefing (a ficha decide o que fazer)
+  if (EMBED) document.addEventListener("keydown", e => {
+    const campo = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "");
+    if (e.key === "Escape" || (!campo && (e.key === "ArrowLeft" || e.key === "ArrowRight"))) {
+      e.preventDefault();
+      window.parent.postMessage({tipo: "bm-tecla", tecla: e.key}, location.origin);
+    }
+  });
 }
 
 function lerHash() {
@@ -1483,7 +1500,7 @@ function lerHash() {
 }
 
 /* ================================================================ testes expostos (sem efeito em produção) */
-window.__BM__ = {limparCache: () => cache.clear(), completude, fotoTSE, lerPessoal, lerDCL, nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
+window.__BM__ = {EMBED, limparCache: () => cache.clear(), completude, fotoTSE, lerPessoal, lerDCL, nomesCompativeis, normNome, slug, parseWikidata, reconciliar, S, Fontes, abrirMunicipio, escolherUF, markdown};
 
 montarMapa();
 ligarEventos();

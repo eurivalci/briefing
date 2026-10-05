@@ -96,84 +96,30 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
   .bar:nth-child(n+7){display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-/* ---------- ficha em modal ---------- */
-.ficha-fundo{position:fixed; inset:0; z-index:50; background:rgba(8,11,15,.66); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:flex-start; justify-content:center; padding:max(24px, env(safe-area-inset-top,0px)) 16px 24px; overflow-y:auto}
+/* ---------- ficha em modal: briefing incorporado ---------- */
+.ficha-fundo{position:fixed; inset:0; z-index:50; background:rgba(8,11,15,.66); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:max(16px, env(safe-area-inset-top,0px)) 16px max(16px, env(safe-area-inset-bottom,0px))}
 .ficha-fundo[hidden]{display:none}
-.ficha{width:min(880px,100%); background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:0 24px 64px rgba(0,0,0,.45); animation:abre .16s ease-out; outline:none}
+.ficha{width:min(1180px,100%); height:min(100%, 960px); display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:0 24px 64px rgba(0,0,0,.45); overflow:hidden; animation:abre .16s ease-out; outline:none}
 @keyframes abre{from{opacity:0; transform:translateY(6px) scale(.99)} to{opacity:1; transform:none}}
-.f-barra{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line-soft)}
-.f-barra .pos{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
-.f-barra .nav{display:flex; gap:6px}
-.f-btn{background:transparent; border:1px solid var(--line); border-radius:8px; padding:5px 11px; cursor:pointer; font-size:13px; color:var(--muted)}
+.f-barra{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border-bottom:1px solid var(--line-soft); flex:none}
+.f-id{display:flex; align-items:baseline; gap:12px; min-width:0; flex-wrap:wrap}
+.f-titulo{display:flex; align-items:baseline; gap:8px; min-width:0}
+.f-titulo b{font:600 16px/1.3 var(--serif); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.f-barra .pos{font-size:12.5px; color:var(--faint); font-variant-numeric:tabular-nums}
+.f-barra .nav{display:flex; gap:6px; flex:none}
+.f-btn{background:transparent; border:1px solid var(--line); border-radius:8px; padding:5px 11px; cursor:pointer; font-size:13px; line-height:1.4; color:var(--muted); text-decoration:none; display:inline-block; white-space:nowrap}
 .f-btn:hover:not(:disabled){border-color:var(--brass); color:var(--text)}
 .f-btn:disabled{opacity:.4; cursor:default}
-.f-topo{display:grid; grid-template-columns:96px minmax(0,1fr) 120px; gap:22px; padding:22px 24px 18px; align-items:start}
-.f-retrato{width:96px; aspect-ratio:4/5; border-radius:10px; border:1px solid var(--line); background:var(--raise); object-fit:cover; display:grid; place-items:center; font:600 32px var(--serif); color:var(--brass)}
-.f-papel{margin:0; color:var(--muted); font-size:13.5px}
-.f-nome{font:700 30px/1.1 var(--serif); margin:3px 0 4px; letter-spacing:-.01em}
-.f-sub{margin:0 0 10px; color:var(--muted)}
-.f-pill{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:2px 10px; border-radius:999px; background:var(--raise); color:var(--muted)}
-.f-pill::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--info)}
-.f-pill.consistente::before{background:var(--ok)} .f-pill.divergente::before{background:var(--warn)}
-.f-pill.divergente{color:var(--warn)}
-.f-selo{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; color:var(--muted); text-align:center}
-.f-selo svg{width:104px; height:104px}
-.f-selo .arco{fill:none; stroke-width:8}
-.f-selo .vazio{stroke:var(--line)} .f-selo .pend{stroke:var(--line-soft)}
-.f-selo .cheio{stroke:var(--brass); transition:stroke-dasharray .5s cubic-bezier(.2,.7,.2,1)}
-.f-selo .n{font:700 28px var(--serif); fill:var(--text)} .f-selo .de{font:500 11px var(--sans); fill:var(--muted)}
-.f-kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
-.f-kpi{padding:13px 18px; border-left:1px solid var(--line-soft)}
-.f-kpi:first-child{border-left:0; padding-left:24px}
-.f-kpi .r{font-size:12.5px; color:var(--muted)}
-.f-kpi .v{font:600 21px/1.25 var(--serif); font-variant-numeric:tabular-nums; margin-top:2px}
-.f-kpi .v.ok{color:var(--ok)} .f-kpi .v.warn{color:var(--warn)}
-.f-kpi .s{font-size:11.5px; color:var(--faint)}
-.f-corpo{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:18px 24px}
-.f-sec{background:var(--sheet); border-radius:12px; padding:16px 18px; min-width:0}
-.f-sec h3{font:600 16px/1.3 var(--serif); margin:0 0 10px}
-.f-sec dl{display:grid; grid-template-columns:max-content minmax(0,1fr); gap:5px 16px; margin:0; font-size:13.5px}
-.f-sec dt{color:var(--muted)} .f-sec dd{margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere}
-.f-sec .vazio{color:var(--faint)}
-.f-sec.largo{grid-column:span 2}
-.f-capag{display:flex; align-items:baseline; gap:12px; margin-bottom:8px}
-.f-capag b{font:700 38px/1 var(--serif); color:var(--brass)}
-.f-capag b.ok{color:var(--ok)} .f-capag b.warn{color:var(--warn)}
-.f-traj{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
-.f-traj span{font-size:12px; background:var(--raise); border-radius:6px; padding:2px 8px; color:var(--muted)}
-.f-traj b{color:var(--text)}
-.f-links{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13.5px}
-.f-rodape{display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; padding:14px 24px 20px; border-top:1px solid var(--line-soft)}
-.f-rodape .acoes{display:flex; gap:8px; flex-wrap:wrap}
-.f-rodape .primario{background:var(--brass); color:#1b1508; border:0; border-radius:8px; padding:8px 14px; font-weight:600; text-decoration:none; font-size:13.5px}
-.f-rodape .fontes{font-size:11.5px; color:var(--faint); max-width:52ch}
+.f-quadro{flex:1; width:100%; border:0; background:var(--ink); display:block}
 #tbody tr{cursor:pointer}
-@media print{
-  body.imprimindo-ficha > *:not(#ficha-fundo){display:none!important}
-  body.imprimindo-ficha{background:#fff}
-  body.imprimindo-ficha .ficha-fundo{position:static; background:none; backdrop-filter:none; padding:0; display:block}
-  body.imprimindo-ficha .ficha{width:100%; border:0; box-shadow:none; animation:none; background:#fff; color:#111;
-    --surface:#fff; --sheet:#f5f5f3; --raise:#ececea; --line:#ccc; --line-soft:#ddd; --text:#111; --muted:#444; --faint:#666; --brass:#7a5a12; --ok:#1f7a5c; --warn:#a63d22}
-  body.imprimindo-ficha .f-barra, body.imprimindo-ficha .f-rodape .acoes{display:none}
-  body.imprimindo-ficha .f-sec, body.imprimindo-ficha .f-kpis{break-inside:avoid}
-  body.imprimindo-ficha a{color:#111}
-}
 #tbody tr:hover td:first-child a{text-decoration-thickness:2px}
 .dica{font-size:13px; color:var(--muted); margin:0 0 10px}
-@media (max-width:700px){
-  .f-barra .rot{display:none}
-  .f-btn{min-width:40px; padding:6px 10px}
-  .f-selo span{text-align:left}
-  .f-topo{grid-template-columns:72px minmax(0,1fr); padding:18px}
-  .f-retrato{width:72px; font-size:24px}
-  .f-selo{grid-column:span 2; flex-direction:row; justify-content:flex-start; gap:12px}
-  .f-selo svg{width:80px; height:80px}
-  .f-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .f-kpi, .f-kpi:first-child{padding:12px 18px; border-left:0; border-top:1px solid var(--line-soft)}
-  .f-kpi:nth-child(even){border-left:1px solid var(--line-soft)}
-  .f-corpo{grid-template-columns:1fr; padding:14px}
-  .f-sec.largo{grid-column:span 1}
-  .f-nome{font-size:24px}
+@media (max-width:760px){
+  .ficha-fundo{padding:0}
+  .ficha{width:100%; height:100%; border-radius:0; border:0}
+  .f-barra .rot, .f-titulo .note, .f-barra [data-copiar]{display:none}
+  .f-barra{gap:8px; padding:8px 10px}
+  .f-btn{padding:6px 9px}
 }
 </style>
 </head>
@@ -217,7 +163,7 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
       <button class="btn" id="b-link">Copiar link deste filtro</button>
     </div>
     <div class="bars" id="bars" aria-label="Prefeitos por partido"></div>
-    <p class="dica" id="dica">Clique em um município para abrir a ficha completa. Use ← → para percorrer a lista com a ficha aberta. Ctrl ou Cmd + clique abre o briefing em nova aba.</p>
+    <p class="dica" id="dica">Clique em um município para abrir o briefing completo em ficha. Use ← → para percorrer a lista com a ficha aberta. Ctrl ou Cmd + clique abre o briefing em nova aba.</p>
     <div class="tablewrap"><table>
       <thead><tr id="thead"></tr></thead>
       <tbody id="tbody"></tbody>
@@ -540,9 +486,6 @@ function ligar() {
   $("#summary").addEventListener("click", e => { if (e.target.closest("#b-div")) { S.f.sit = "divergente"; sincronizarCampos(); atualizar(); } });
   document.addEventListener("error", e => {   // miniatura quebrada vira inicial (CSP sem onerror inline)
     const img = e.target;
-    if (img.tagName === "IMG" && img.classList.contains("f-retrato")) {
-      const d = document.createElement("div"); d.className = "f-retrato"; d.textContent = img.dataset.ini || "?"; img.replaceWith(d); return;
-    }
     if (img.tagName === "IMG" && img.classList.contains("thumb")) {
       const s = document.createElement("span"); s.className = "thumb"; s.textContent = img.dataset.ini || "?"; img.replaceWith(s);
     }
@@ -558,156 +501,61 @@ function ligar() {
   $("#api-js").textContent = `const r = await fetch("${raiz}data/prefeitos/todos.json");\nconst { registros } = await r.json();\nconst doCeara = registros.filter(p => p.uf === "CE");`;
 }
 
-/* ---------------------------------------------------------------- ficha em modal */
-const capagCache = new Map();
-function capagUF(uf) {
-  if (!capagCache.has(uf)) capagCache.set(uf, getJSON(`./data/capag/${uf.toLowerCase()}.json`, 15000).catch(e => ({erro: e.message})));
-  return capagCache.get(uf);
-}
-const MESES_POS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-const fmtPos = (p) => /^\d{4}-\d{2}/.test(p || "") ? `${MESES_POS[+p.slice(5, 7) - 1]}/${p.slice(0, 4)}` : (p || "");
-const SIT = {consistente: "Mandato consistente entre as fontes", divergente: "Fontes divergem sobre o cargo",
-  parcial: "Confirmado por uma fonte", sem_dados: "Sem confirmação de fontes", nao_se_aplica: "Sem prefeito (Distrito Federal)"};
-
-function gruposFicha(r, capag) {
-  const g = (nome, campos, pendente = false) => ({nome, pendente, total: campos.length,
-    ok: pendente ? 0 : campos.filter(c => c[1] != null && c[1] !== "" && c[1] !== false).length,
-    faltando: pendente ? [] : campos.filter(c => c[1] == null || c[1] === "" || c[1] === false).map(c => c[0])});
-  const out = [];
-  if (r.uf !== "DF") out.push(g("Eleição (TSE)", [["prefeito", r.prefeito], ["partido", r.partido], ["data da eleição", r.eleicao_data],
-    ["votos", r.votos_pct], ["vice", r.vice], ["nascimento", r.nascimento], ["bens declarados", r.bens_declarados], ["foto oficial", fotoOk(r.foto) || null]]));
-  out.push(g("Município (IBGE)", [["região intermediária", r.regiao_intermediaria], ["gentílico", r.gentilico], ["população", r.populacao],
-    ["área", r.area_km2], ["densidade", r.densidade], ["PIB per capita", r.pib_per_capita], ["IDHM", r.idhm], ["salário médio", r.salario_medio_sm],
-    ["escolarização", r.escolarizacao_6_14], ["mortalidade infantil", r.mortalidade_infantil]]));
-  out.push(g("Referências (Wikidata)", [["site oficial", r.site_oficial], ["Wikipedia", r.wikipedia], ["prefeito na Wikidata", r.prefeito_wikidata]]));
-  if (r.uf !== "DF") out.push(g("Fiscal (Tesouro)", [["nota CAPAG", capag && capag.ultima ? capag.ultima.capag : null]], capag === undefined));
-  return out;
-}
-
-function seloFicha(grupos) {
-  const total = grupos.reduce((a, g) => a + g.total, 0), ok = grupos.reduce((a, g) => a + g.ok, 0);
-  const R = 42, C = 2 * Math.PI * R; let giro = -90;
-  const arcos = grupos.map(g => {
-    const fatia = 360 * g.total / total, comp = C * (fatia - 7) / 360, cheio = g.pendente ? 0 : comp * g.ok / g.total;
-    const rot = `rotate(${giro.toFixed(2)} 52 52)`; giro += fatia;
-    return `<circle class="arco ${g.pendente ? "pend" : "vazio"}" cx="52" cy="52" r="${R}" stroke-dasharray="${comp.toFixed(2)} ${C.toFixed(2)}" transform="${rot}"/>
-      <circle class="arco cheio" cx="52" cy="52" r="${R}" stroke-dasharray="${cheio.toFixed(2)} ${C.toFixed(2)}" transform="${rot}"/>`;
-  }).join("");
-  const faltam = grupos.flatMap(g => g.faltando);
-  return `<div class="f-selo" title="${esc(faltam.length ? "Faltam: " + faltam.join(", ") : "Todos os dados esperados foram encontrados")}">
-    <svg viewBox="0 0 104 104" role="img" aria-label="${ok} de ${total} dados encontrados">${arcos}
-      <text class="n" x="52" y="56" text-anchor="middle">${ok}</text><text class="de" x="52" y="72" text-anchor="middle">de ${total}</text></svg>
-    <span>dados encontrados${faltam.length ? `<br>faltam ${faltam.length}` : ""}</span></div>`;
-}
+/* ---------------------------------------------------------------- ficha em modal: o briefing incorporado */
+// A ficha exibe o próprio briefing (index.html?embed=1). Uma fonte só: tudo o que o briefing ganhar,
+// a ficha ganha junto, e os dados ao vivo (IBGE, SICONFI, CAPAG) aparecem mesmo antes do ETL.
+const urlBriefing = (r, embed) => `index.html${embed ? "?embed=1" : ""}#/${r.uf}/${r.codigo_ibge}`;
 
 function renderFicha() {
   const F = S.ficha; if (!F) return;
-  const r = F.r, cp = F.capag, i = S.filtrados.findIndex(x => x.codigo_ibge === r.codigo_ibge);
-  const val = (v, fmt) => v == null || v === "" ? `<span class="vazio">não informado</span>` : (fmt ? fmt(v) : esc(v));
-  const pct = (v) => `${fmtN(v, 1)}%`;
-  const u = cp && cp.ultima;
-  const boa = u && u.capag && /^[AB]/.test(u.capag);
-  const foto = fotoOk(r.foto) ? `<img class="f-retrato" src="${esc("./data/" + r.foto)}" alt="Foto de ${esc(r.prefeito || "")}" data-ini="${esc((r.prefeito || "?").charAt(0))}">`
-    : `<div class="f-retrato" aria-hidden="true">${esc((r.prefeito || r.municipio || "?").charAt(0))}</div>`;
-  const ufl = (r.uf || "").toLowerCase(), sl = norm(r.municipio).replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const link = (u, t) => /^https?:\/\//.test(u || "") ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>` : "";
-  let fiscal;
-  if (r.uf === "DF") fiscal = `<p class="note">O Distrito Federal tem regime fiscal de estado.</p>`;
-  else if (cp === undefined) fiscal = `<p class="note">Carregando a CAPAG…</p>`;
-  else if (cp.erro) fiscal = `<p class="note">CAPAG indisponível (${esc(cp.erro)}).</p>`;
-  else if (!u) fiscal = `<p class="note">Município ausente nas posições publicadas pelo Tesouro.</p>`;
-  else fiscal = `<div class="f-capag"><b class="${u.capag ? (boa ? "ok" : "warn") : ""}">${esc(u.capag || "n.d.")}</b>
-      <span class="note">Posição de ${esc(fmtPos(u.posicao))}, ano-base ${esc(u.ano_base)}.<br>${u.capag ? (boa ? "Em regra, elegível a crédito com garantia da União." : "Em regra, não elegível a crédito com garantia da União.") : "Nota não calculada pelo Tesouro."}</span></div>
-    <dl><dt>Endividamento</dt><dd>${val(u.endividamento, v => pct(100 * v))} ${u.nota_endividamento ? `<span class="pt">${esc(u.nota_endividamento)}</span>` : ""}</dd>
-      <dt>Poupança corrente</dt><dd>${val(u.poupanca_corrente, v => pct(100 * v))} ${u.nota_poupanca_corrente ? `<span class="pt">${esc(u.nota_poupanca_corrente)}</span>` : ""}</dd>
-      <dt>${(u.ano_capag || +String(u.posicao).slice(0, 4)) >= 2024 ? "Liquidez relativa" : "Liquidez"}</dt><dd>${val(u.liquidez, v => pct(100 * v))} ${u.nota_liquidez ? `<span class="pt">${esc(u.nota_liquidez)}</span>` : ""}</dd>
-      ${u.qualidade_informacao != null ? `<dt>Qualidade da informação (ICF)</dt><dd>${esc(u.qualidade_informacao)}</dd>` : ""}</dl>
-    ${u.origem_nota || u.observacao ? `<p class="note" style="margin:8px 0 0">${u.origem_nota ? `Origem da nota final: ${esc(u.origem_nota)}.` : ""}${u.observacao ? ` ${esc(u.observacao)}` : ""}</p>` : ""}
-    ${cp.trajetoria.length > 1 ? `<div class="f-traj">${cp.trajetoria.map(t => `<span>${esc(fmtPos(t.posicao))} <b>${esc(t.capag || "n.d.")}</b></span>`).join("")}</div>` : ""}
-    <p class="note" style="margin:10px 0 0">Fonte: Tesouro Nacional (ODbL). A nota não vincula o Tesouro. Limites da LRF ao vivo no briefing completo.</p>`;
-  const grupos = gruposFicha(r, cp);
-  $("#ficha").innerHTML = `
-    <div class="f-barra"><span class="pos">${i >= 0 ? `${fmtN(i + 1)} de ${fmtN(S.filtrados.length)}<span class="rot"> no filtro atual</span>` : ""}</span>
-      <div class="nav"><button class="f-btn" data-nav="-1" ${i <= 0 ? "disabled" : ""} aria-label="Município anterior">‹<span class="rot"> Anterior</span></button>
-        <button class="f-btn" data-nav="1" ${i < 0 || i >= S.filtrados.length - 1 ? "disabled" : ""} aria-label="Próximo município"><span class="rot">Próximo </span>›</button>
-        <button class="f-btn" data-fechar aria-label="Fechar ficha">✕<span class="rot"> Fechar</span></button></div></div>
-    <div class="f-topo">${foto}
-      <div><p class="f-papel">${r.prefeito ? `Prefeit${r.genero === "Feminino" ? "a" : "o"} de ${esc(r.municipio)}, ${esc(r.uf)}` : `${esc(r.municipio)}, ${esc(r.uf)}`}</p>
-        <h2 class="f-nome" id="f-nome">${esc(r.prefeito || r.municipio)}</h2>
-        <p class="f-sub">${r.nome_completo ? esc(r.nome_completo) : esc(r.uf === "DF" ? "Governado pelo governador do Distrito Federal" : "Sem eleito na base do TSE")}
-          ${r.partido ? ` <span class="pt" title="${esc(r.partido_nome || "")}">${esc(r.partido)}</span>` : ""}</p>
-        <span class="f-pill ${esc(r.situacao_mandato || "")}">${esc(SIT[r.situacao_mandato] || "Situação do mandato não avaliada")}</span></div>
-      ${seloFicha(grupos)}</div>
-    <div class="f-kpis">
-      <div class="f-kpi"><div class="r">População</div><div class="v">${r.populacao != null ? fmtN(r.populacao) : "—"}</div><div class="s">${r.populacao_ano ? `IBGE, ${esc(r.populacao_ano)}` : "IBGE"}</div></div>
-      <div class="f-kpi"><div class="r">PIB per capita</div><div class="v">${r.pib_per_capita != null ? fmtBRL(r.pib_per_capita) : "—"}</div><div class="s">${r.pib_per_capita_ano ? `IBGE, ${esc(r.pib_per_capita_ano)}` : "IBGE"}</div></div>
-      <div class="f-kpi"><div class="r">IDHM</div><div class="v">${r.idhm != null ? fmtN(r.idhm, 3) : "—"}</div><div class="s">${r.idhm_ano ? `PNUD/IBGE, ${esc(r.idhm_ano)}` : "IBGE"}</div></div>
-      <div class="f-kpi"><div class="r">Capacidade de pagamento</div><div class="v ${u && u.capag ? (boa ? "ok" : "warn") : ""}">${r.uf === "DF" ? "—" : cp === undefined ? "…" : esc(u ? (u.capag || "n.d.") : "—")}</div><div class="s">${u ? `CAPAG, ${esc(fmtPos(u.posicao))}` : "CAPAG"}</div></div>
-    </div>
-    <div class="f-corpo">
-      <section class="f-sec"><h3>Mandato</h3><dl>
-        <dt>Eleição</dt><dd>${val(r.eleicao_data, v => `${esc(String(v).slice(8, 10))}/${esc(String(v).slice(5, 7))}/${esc(String(v).slice(0, 4))}${r.turno === 2 ? ", 2º turno" : ""}${r.suplementar ? " (suplementar)" : ""}`)}</dd>
-        <dt>Votos válidos</dt><dd>${val(r.votos_pct, v => `${fmtN(v, 1)}%${r.votos != null ? ` <span class="note">(${fmtN(r.votos)})</span>` : ""}`)}</dd>
-        <dt>Vice</dt><dd>${val(r.vice, v => esc(v) + (r.vice_partido ? ` <span class="note">${esc(r.vice_partido)}</span>` : ""))}</dd>
-        <dt>Idade</dt><dd>${val(r.idade, v => `${v} anos`)}</dd>
-        <dt>Ocupação</dt><dd>${val(r.ocupacao)}</dd>
-        <dt>Instrução</dt><dd>${val(r.instrucao)}</dd>
-        <dt>Bens declarados</dt><dd>${val(r.bens_declarados, v => fmtBRL(v))}</dd></dl></section>
-      <section class="f-sec"><h3>Município</h3><dl>
-        <dt>Região</dt><dd>${val(r.regiao)}</dd>
-        <dt>Região intermediária</dt><dd>${val(r.regiao_intermediaria)}</dd>
-        <dt>Gentílico</dt><dd>${val(r.gentilico)}</dd>
-        <dt>Área</dt><dd>${val(r.area_km2, v => `${fmtN(v, 1)} km²`)}</dd>
-        <dt>Densidade</dt><dd>${val(r.densidade, v => `${fmtN(v, 1)} hab/km²`)}</dd>
-        <dt>Salário médio formal</dt><dd>${val(r.salario_medio_sm, v => `${fmtN(v, 1)} salários mínimos`)}</dd>
-        <dt>Escolarização 6 a 14</dt><dd>${val(r.escolarizacao_6_14, v => pct(v))}</dd>
-        <dt>Mortalidade infantil</dt><dd>${val(r.mortalidade_infantil, v => `${fmtN(v, 1)} por mil`)}</dd></dl></section>
-      <section class="f-sec largo"><h3>Capacidade de pagamento</h3>${fiscal}</section>
-      <section class="f-sec largo"><h3>Referências</h3><div class="f-links">
-        ${link(`https://cidades.ibge.gov.br/brasil/${ufl}/${sl}/panorama`, "IBGE Cidades")}${link(r.site_oficial, "Site oficial")}
-        ${link(r.wikipedia, "Wikipedia")}${r.wikidata ? link(`https://www.wikidata.org/wiki/${r.wikidata}`, "Wikidata") : ""}
-        ${link(`https://hubpolitico.com.br/local/${ufl}/${sl}`, "HubPolítico")}</div></section>
-    </div>
-    <div class="f-rodape"><span class="fontes">Dados do TSE, IBGE, Wikidata e Tesouro Nacional, na base de ${S.gerado ? esc(new Date(S.gerado).toLocaleDateString("pt-BR")) : "data desconhecida"}.</span>
-      <div class="acoes"><button class="f-btn" data-copiar>Copiar link da ficha</button>
-        <button class="f-btn" data-pdf>Gerar PDF</button>
-        <a class="primario" href="${esc(`index.html#/${r.uf}/${r.codigo_ibge}`)}">Abrir briefing completo</a></div></div>`;
+  const r = F.r, i = S.filtrados.findIndex(x => x.codigo_ibge === r.codigo_ibge);
+  $("#f-titulo").innerHTML = `<b>${esc(r.municipio)}, ${esc(r.uf)}</b>${r.prefeito ? `<span class="note">${esc(r.prefeito)}${r.partido ? `, ${esc(r.partido)}` : ""}</span>` : ""}`;
+  $("#f-pos").innerHTML = i >= 0 ? `${fmtN(i + 1)} de ${fmtN(S.filtrados.length)}<span class="rot"> no filtro atual</span>` : "";
+  $("#ficha [data-nav='-1']").disabled = i <= 0;
+  $("#ficha [data-nav='1']").disabled = i < 0 || i >= S.filtrados.length - 1;
+  $("#f-abrir").setAttribute("href", urlBriefing(r, false));
+  const quadro = $("#f-quadro"), alvo = urlBriefing(r, true);
+  // briefing já carregado no quadro: troca só o município (sem recarregar a página)
+  let trocou = false;
+  try {
+    const win = quadro.contentWindow;
+    if (win && win.__BM__ && win.__BM__.EMBED) { win.location.hash = `#/${r.uf}/${r.codigo_ibge}`; trocou = true; }
+  } catch { /* outra origem: recarrega */ }
+  if (!trocou && quadro.getAttribute("src") !== alvo) quadro.setAttribute("src", alvo);
+  quadro.setAttribute("title", `Briefing de ${r.municipio}, ${r.uf}`);
 }
 
 /** Focáveis do modal em ordem de DOCUMENTO: seletor composto não garante ordem em todo motor. */
 function focaveis() {
-  return [...$("#ficha").querySelectorAll("a[href], button:not([disabled])")]
+  return [...$("#ficha").querySelectorAll("a[href], button:not([disabled]), iframe")]
     .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
 }
+
 function abrirFicha(cod, gatilho) {
   const r = S.todos.find(x => x.codigo_ibge === cod);
   if (!r) return;
   const ja = !!S.ficha;
-  S.ficha = {r, capag: undefined, gatilho: ja ? S.ficha.gatilho : (gatilho || document.activeElement)};
+  S.ficha = {r, gatilho: ja ? S.ficha.gatilho : (gatilho || document.activeElement)};
   const j = S.filtrados.findIndex(x => x.codigo_ibge === cod), pg = Math.floor(j / POR_PAGINA);
   if (j >= 0 && pg !== S.pagina) { S.pagina = pg; render(); }   // a tabela acompanha a ficha
   $("#ficha-fundo").hidden = false;
   document.body.style.overflow = "hidden";
   renderFicha(); paraHash();
-  $("#ficha").focus();
-  if (r.uf !== "DF") capagUF(r.uf).then(d => {
-    if (!S.ficha || S.ficha.r !== r) return;   // usuário já navegou para outra ficha
-    if (d.erro) { S.ficha.capag = {erro: d.erro}; }
-    else { const t = (d.municipios || {})[cod] || []; S.ficha.capag = {trajetoria: t, ultima: t.length ? t[t.length - 1] : null}; }
-    renderFicha();
-  });
+  if (!ja) $("#ficha").focus();
 }
-/** PDF da ficha: o navegador imprime só o modal, em tema claro ("Salvar como PDF" no diálogo). */
+
+/** PDF: imprime o briefing do quadro, que já tem o próprio CSS de impressão. */
 function imprimirFicha() {
   if (!S.ficha) return;
-  const tituloAntes = document.title;
-  document.title = `Ficha ${S.ficha.r.municipio} ${S.ficha.r.uf}`;   // vira o nome sugerido do arquivo
-  document.body.classList.add("imprimindo-ficha");
-  const fim = () => { document.body.classList.remove("imprimindo-ficha"); document.title = tituloAntes; window.removeEventListener("afterprint", fim); };
-  window.addEventListener("afterprint", fim);
-  window.print();
-  setTimeout(fim, 1500);   // navegadores que não disparam afterprint
+  const win = $("#f-quadro").contentWindow;
+  if (!win) return;
+  let antes = null;
+  try { antes = win.document.title; win.document.title = `Briefing ${S.ficha.r.municipio} ${S.ficha.r.uf}`; } catch {}
+  try { win.focus(); win.print(); }
+  catch { window.open(urlBriefing(S.ficha.r, false), "_blank", "noopener"); toast("Abra o briefing e use Imprimir ou salvar PDF."); }
+  setTimeout(() => { try { if (antes != null) win.document.title = antes; } catch {} }, 1500);
 }
+
 function fecharFicha() {
   if (!S.ficha) return;
   const g = S.ficha.gatilho, cod = S.ficha.r.codigo_ibge;
@@ -726,10 +574,28 @@ function navegarFicha(delta) {
   if (i < 0 || j < 0 || j >= S.filtrados.length) return;
   abrirFicha(S.filtrados[j].codigo_ibge);
 }
+function tecla(k) {
+  if (!S.ficha) return;
+  if (k === "Escape") fecharFicha();
+  else if (k === "ArrowRight") navegarFicha(1);
+  else if (k === "ArrowLeft") navegarFicha(-1);
+}
 function ligarFicha() {
   const fundo = document.createElement("div");
   fundo.id = "ficha-fundo"; fundo.className = "ficha-fundo"; fundo.hidden = true;
-  fundo.innerHTML = `<div class="ficha" id="ficha" role="dialog" aria-modal="true" aria-labelledby="f-nome" tabindex="-1"></div>`;
+  fundo.innerHTML = `<div class="ficha" id="ficha" role="dialog" aria-modal="true" aria-labelledby="f-titulo" tabindex="-1">
+    <div class="f-barra">
+      <div class="f-id"><span id="f-titulo" class="f-titulo"></span><span id="f-pos" class="pos"></span></div>
+      <div class="nav">
+        <button class="f-btn" data-nav="-1" aria-label="Município anterior">‹<span class="rot"> Anterior</span></button>
+        <button class="f-btn" data-nav="1" aria-label="Próximo município"><span class="rot">Próximo </span>›</button>
+        <button class="f-btn" data-pdf aria-label="Gerar PDF do briefing"><span class="rot">Gerar </span>PDF</button>
+        <a class="f-btn f-abrir" id="f-abrir" href="#" aria-label="Abrir briefing completo"><span class="rot">Abrir </span>briefing</a>
+        <button class="f-btn" data-copiar aria-label="Copiar link da ficha">Link</button>
+        <button class="f-btn" data-fechar aria-label="Fechar ficha">✕</button>
+      </div></div>
+    <iframe id="f-quadro" class="f-quadro" title="Briefing do município" loading="eager" referrerpolicy="same-origin"></iframe>
+  </div>`;
   document.body.appendChild(fundo);
   fundo.addEventListener("mousedown", e => { if (e.target === fundo) fecharFicha(); });
   fundo.addEventListener("click", async e => {
@@ -740,6 +606,11 @@ function ligarFicha() {
     else if ("copiar" in t.dataset) {
       try { await navigator.clipboard.writeText(location.href); toast("Link da ficha copiado."); } catch { toast("Copie o endereço da barra do navegador."); }
     }
+  });
+  // teclas vindas de dentro do briefing incorporado (só do próprio quadro, da mesma origem)
+  window.addEventListener("message", e => {
+    if (e.source !== $("#f-quadro").contentWindow || (e.origin && e.origin !== location.origin)) return;
+    if (e.data && e.data.tipo === "bm-tecla") tecla(e.data.tecla);
   });
   document.addEventListener("keydown", e => {
     if (!S.ficha) return;
@@ -764,7 +635,7 @@ function ligarFicha() {
   });
 }
 
-window.__PREF__ = {S, gerarCSV, gerarJSON, celula, achatar, aplicar, render, abrirFicha, fecharFicha, gruposFicha, focaveis};
+window.__PREF__ = {S, gerarCSV, gerarJSON, celula, achatar, aplicar, render, abrirFicha, fecharFicha, focaveis, urlBriefing};
 
 (async () => {
   ligar(); ligarFicha(); deHash(); sincronizarCampos();
