@@ -234,6 +234,23 @@ def testar_ponta_a_ponta():
     assert sorted(json.loads((tmp / "capag" / "_auditoria.json").read_text())["arquivos_por_uf"]) == ["CE"], \
         "a UF vem do prefixo do código (23 = CE), não do cadastro"
 
+    # distribuição das notas
+    dist = json.loads((tmp / "capag" / "_distribuicao.json").read_text(encoding="utf-8"))
+    ult = dist["posicoes"][-1]
+    assert ult["posicao"] == "2026-09-01" and sum(ult["brasil"].values()) == 120 and ult["ufs"]["CE"] == ult["brasil"]
+    assert ult["brasil"].get("n.d.", 0) >= 1, "não calculada também é contada"
+
+    # leitor novo (versão maior) reprocessa posições em cache, mesmo sem republicação no portal
+    cache = json.loads((tmp / "capag" / "_posicoes.json").read_text(encoding="utf-8"))
+    for v in cache.values():
+        v["versao"] = 1
+    (tmp / "capag" / "_posicoes.json").write_text(json.dumps(cache), encoding="utf-8")
+    ARQS["baixados"] = []
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        K.main(args)
+    assert {"/f/2021.xlsx", "/f/2026-jun.xlsx", "/f/2026-set.xlsx"} <= set(ARQS["baixados"]), \
+        f"versão do leitor no cache força reprocessar: {ARQS['baixados']}"
+
     # sem cadastro de municípios: ainda grava os arquivos por UF (antes: "OK" sem gravar nada)
     t2 = Path(tempfile.mkdtemp())
     args2 = ["--out", str(t2 / "capag"), "--municipios", str(t2 / "nao-existe.json"), "--ckan", base + "/ckan"]

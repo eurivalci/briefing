@@ -263,6 +263,13 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   assert((fb.match(/não informado/g) || []).length >= 6, "campos do IBGE ausentes ditos como ausentes");
   const gb = P().gruposFicha(P().S.ficha.r, P().S.ficha.capag);
   assert.strictEqual(gb.find(g => g.nome === "Município (IBGE)").ok, 0, "selo mostra o IBGE vazio");
+  // PDF da ficha: imprime só o modal e restaura a página depois
+  let imprimiu = null;
+  w.print = () => { imprimiu = {classe: d.body.classList.contains("imprimindo-ficha"), titulo: d.title}; w.dispatchEvent(new w.Event("afterprint")); };
+  d.querySelector("#ficha [data-pdf]").click();
+  assert(imprimiu && imprimiu.classe, "modo de impressão da ficha ativo durante o print");
+  assert(/^Ficha Cidade 001 CE$/.test(imprimiu.titulo), "nome sugerido do PDF: " + imprimiu.titulo);
+  assert(!d.body.classList.contains("imprimindo-ficha") && !/^Ficha/.test(d.title), "página restaurada após imprimir");
   assert.deepStrictEqual(erros, [], "sem exceções com o formato de produção");
   w.close();
 

@@ -28,7 +28,7 @@ MUN = {
     "2304400": ("Fortaleza", "CE"), "2303709": ("Caucaia", "CE"), "2507507": ("João Pessoa", "PB"),
     "5300108": ("Brasília", "DF"), "5101837": ("Boa Esperança do Norte", "MT"),
 }
-CTRL = {"lote": True, "falhar": set(), "chamadas": 0, "wd_falha": False, "lote_ruim": set(), "paths": []}
+CTRL = {"lote": True, "falhar": set(), "chamadas": 0, "wd_falha": False, "lote_ruim": set(), "paths": [], "sidra_falha": False}
 
 
 def localidades():
@@ -73,6 +73,12 @@ class H(http.server.BaseHTTPRequestHandler):
         CTRL["paths"].append(p)
         if p.endswith("/localidades/municipios"):
             return self.responder(localidades())
+        if "/agregados/6579/periodos/-1/variaveis/9324" in p:
+            if CTRL["sidra_falha"]:
+                return self.responder({"erro": "fora do ar"}, 503)
+            series = [{"localidade": {"id": c, "nome": n}, "serie": {"2025": valor(29171, c)}} for c, (n, _) in MUN.items()]
+            return self.responder([{"id": "9324", "variavel": "População residente estimada",
+                                    "resultados": [{"classificacoes": [], "series": series}]}])
         if p.endswith("/pesquisas/33/indicadores"):
             return self.responder([{"id": 1, "indicador": "Grupo", "children": [
                 {"id": 29169, "indicador": "Gentílico", "children": []}, {"id": 29170, "indicador": "Prefeito", "children": []}]}])
@@ -112,7 +118,8 @@ class H(http.server.BaseHTTPRequestHandler):
 
 def rodar(saida, url, *extra):
     with contextlib.redirect_stdout(io.StringIO()):
-        return E.main(["--out", str(saida), "--ibge-base", url + "/api/v1", "--wikidata-url", url + "/sparql", *extra])
+        return E.main(["--out", str(saida), "--ibge-base", url + "/api/v1", "--wikidata-url", url + "/sparql",
+                       "--sidra-base", url + "/api/v3/agregados", *extra])
 
 
 def main():
@@ -150,11 +157,12 @@ def main():
     b = tmp / "b.json"
     rodar(b, url, "--forcar")
     db = json.loads(b.read_text(encoding="utf-8"))
-    assert db["status"]["populacao"]["modo"] == "unitario"
-    indicadores = len(E.INDICADORES) + 2
-    # localidades (1) + wikidata (1) + sonda recusada com 1 nova tentativa (2) + meta do painel (1)
+    assert db["status"]["populacao"]["fonte"] == "SIDRA 6579", "população em uma chamada"
+    assert db["status"]["idhm"]["modo"] == "unitario"
+    por_municipio = len(E.INDICADORES) - 1 + 2     # todos menos população (SIDRA), mais prefeito e gentílico
+    # localidades (1) + wikidata (1) + sonda recusada com 1 nova tentativa (2) + meta do painel (1) + SIDRA (1)
     # + exatamente 1 chamada por município e indicador
-    assert CTRL["chamadas"] == 5 + indicadores * len(MUN), f"sem cascata: {CTRL['chamadas']} chamadas"
+    assert CTRL["chamadas"] == 6 + por_municipio * len(MUN), f"sem cascata: {CTRL['chamadas']} chamadas"
     for cod in MUN:
         for k in ("populacao", "idhm", "prefeito_ibge", "gentilico"):
             assert db["municipios"][cod][k] == d["municipios"][cod][k], (cod, k)
@@ -171,7 +179,7 @@ def main():
     CTRL["lote_ruim"] = set()
 
     # ---------- (C) fonte fora do ar: mantém o anterior e diz que manteve
-    CTRL.update(lote=True, falhar={29171, 29170}, wd_falha=True)
+    CTRL.update(lote=True, falhar={29171, 29170}, wd_falha=True, sidra_falha=True)
     rodar(a, url, "--forcar")
     dc = json.loads(a.read_text(encoding="utf-8"))
     fc = dc["municipios"]["2304400"]
@@ -182,10 +190,11 @@ def main():
     assert dc["status"]["idhm"]["ok"] is True, "fonte saudável segue atualizando"
 
     # ---------- (D) retomada: só o que falhou é buscado de novo; depois, nada
-    CTRL.update(falhar=set(), wd_falha=False, chamadas=0, paths=[])
+    CTRL.update(falhar=set(), wd_falha=False, sidra_falha=False, chamadas=0, paths=[])
     rodar(a, url)
     ind_pedidos = {p.split("/indicadores/")[1].split("/")[0] for p in CTRL["paths"] if "/resultados/" in p and p.count("|") >= 3}
-    assert ind_pedidos == {"29171", "29170"}, f"só população e prefeito (os que falharam): {ind_pedidos}"
+    assert ind_pedidos == {"29170"}, f"só o prefeito pela API de Pesquisas: {ind_pedidos}"
+    assert any("/agregados/6579/" in p for p in CTRL["paths"]), "população refeita pelo SIDRA"
     assert not any(p.endswith("/localidades/municipios") for p in CTRL["paths"]), "cadastro fresco não é refeito"
     assert json.loads(a.read_text(encoding="utf-8"))["status"]["wikidata"]["ok"], "Wikidata refeita"
     CTRL.update(chamadas=0)
@@ -209,12 +218,38 @@ def main():
         E.time.monotonic = real
     de = json.loads(e.read_text(encoding="utf-8"))
     assert de["status"]["populacao"]["ok"] and de["municipios"]["2304400"]["populacao"] == 1400.0, "população salva primeiro"
-    assert "idhm" not in de["status"], "o resto foi adiado, não marcado como falha"
+    assert not de["status"].get("idhm", {}).get("ok"), "o resto foi adiado, não marcado como concluído"
     CTRL.update(paths=[])
     rodar(e, url)
-    full29171 = [p for p in CTRL["paths"] if "/indicadores/29171/" in p and p.count("|") >= 3]
-    assert not full29171, "população fresca não é buscada de novo na retomada"
+    assert not any("/agregados/6579/" in p for p in CTRL["paths"]), "população fresca não é buscada de novo na retomada"
     assert json.loads(e.read_text(encoding="utf-8"))["status"]["idhm"]["ok"], "retomada completou o adiado"
+    # ---------- (G) retomada NO MEIO de um indicador: blocos de 2 municípios, para no meio, continua do cursor
+    class Relogio2:
+        n = 0
+        @classmethod
+        def monotonic(cls):
+            cls.n += 1
+            return 0 if cls.n < 6 else 10_000   # libera os primeiros passos e "estoura" depois
+    g = tmp / "g.json"
+    E.time.monotonic = Relogio2.monotonic
+    try:
+        rodar(g, url, "--forcar", "--bloco", "2", "--limite-minutos", "1")
+    finally:
+        E.time.monotonic = real
+    sg = json.loads(g.read_text(encoding="utf-8"))["status"]
+    parciais = {k: v for k, v in sg.items() if v.get("parcial")}
+    assert parciais and all(0 < v["cursor"] < len(MUN) for v in parciais.values()), f"parou no meio com cursor salvo: {parciais}"
+    campo_parcial, cur = next(iter(parciais.items()))
+    ind_id = {c: i for c, _, i, _ in E.INDICADORES}.get(campo_parcial)
+    CTRL.update(paths=[])
+    rodar(g, url, "--bloco", "2")
+    if ind_id:
+        pedidos = [p for p in CTRL["paths"] if f"/indicadores/{ind_id}/resultados/" in p]
+        cods_pedidos = {c for p in pedidos for c in p.rsplit("/", 1)[1].split("|")}
+        assert len(cods_pedidos) == len(MUN) - cur["cursor"], f"retomou do cursor {cur['cursor']}: pediu {sorted(cods_pedidos)}"
+    sg2 = json.loads(g.read_text(encoding="utf-8"))["status"]
+    assert sg2[campo_parcial]["ok"] and not sg2[campo_parcial].get("parcial"), "indicador concluído na retomada"
+
     # ---------- (F) as outras duas leituras do IBGE também descompactam gzip
     B.IBGE_MUNICIPIOS_URL = url + "/api/v1/localidades/municipios"
     C.IBGE_MUNICIPIOS_URL = url + "/api/v1/localidades/municipios"

@@ -91,6 +91,9 @@ function respostas(url) {
     content_urls: {desktop: {page: "https://pt.wikipedia.org/wiki/Evandro_Leal"}}};
   if (u.includes("data/prefeitos/ce.json")) return TSE_CE;
   if (u.includes("data/capag/ce.json")) return CAPAG_CE;
+  if (u.includes("data/capag/_distribuicao.json")) return {posicoes: [
+    {posicao: "2026-06-01", brasil: {A: 1000, B: 2000, C: 2000, D: 300, "n.d.": 270}, ufs: {CE: {A: 40, B: 60, C: 70, D: 4}}},
+    {posicao: "2026-09-01", brasil: {"A+": 200, A: 900, B: 2100, C: 1900, D: 300, "n.d.": 170}, ufs: {CE: {A: 50, B: 70, C: 50, D: 4}}}]};
   if (u.includes("apidatalake.tesouro.gov.br")) {
     const ano = String(new Date().getFullYear());
     if (u.includes("extrato_entregas")) {
@@ -101,6 +104,32 @@ function respostas(url) {
         {exercicio: +ano, instituicao: "Prefeitura Municipal de Fortaleza - CE", entregavel: "Relatório de Gestão Fiscal", periodo: 1, periodicidade: "Q", status_relatorio: "HO"},
         {exercicio: +ano, instituicao: "Prefeitura Municipal de Fortaleza - CE", entregavel: "Relatório Resumido de Execução Orçamentária", periodo: 4, periodicidade: "B", status_relatorio: "HO"},
       ], hasMore: false};
+    }
+    if (/\/rreo\?/.test(u)) {
+      if (/Simplificado/.test(u.replace(/\+/g, " "))) return {items: []};
+      if (/Anexo[+ ]01/.test(u)) return {items: [
+        {conta: "RECEITAS (EXCETO INTRA-ORÇAMENTÁRIAS) (I)", coluna: "PREVISÃO ATUALIZADA (a)", valor: 12000000000},
+        {conta: "RECEITAS (EXCETO INTRA-ORÇAMENTÁRIAS) (I)", coluna: "Até o Bimestre (c)", valor: 8000000000},
+        {conta: "RECEITAS (EXCETO INTRA-ORÇAMENTÁRIAS) (I)", coluna: "% (c/a)", valor: 66.7},
+        {conta: "RECEITAS CORRENTES", coluna: "Até o Bimestre (c)", valor: 7500000000},
+        {conta: "RECEITAS CORRENTES", coluna: "Até o Bimestre (c)", valor: 90000000},     // repetição intraorçamentária
+        {conta: "Impostos, Taxas e Contribuições de Melhoria", coluna: "Até o Bimestre (c)", valor: 2250000000},
+        {conta: "Transferências Correntes", coluna: "Até o Bimestre (c)", valor: 4500000000},
+        {conta: "DESPESAS (EXCETO INTRA-ORÇAMENTÁRIAS) (VIII)", coluna: "DOTAÇÃO ATUALIZADA (e)", valor: 12500000000},
+        {conta: "DESPESAS (EXCETO INTRA-ORÇAMENTÁRIAS) (VIII)", coluna: "DESPESAS EMPENHADAS ATÉ O BIMESTRE (f)", valor: 8400000000},
+        {conta: "DESPESAS (EXCETO INTRA-ORÇAMENTÁRIAS) (VIII)", coluna: "DESPESAS LIQUIDADAS ATÉ O BIMESTRE (h)", valor: 7000000000},
+        {conta: "PESSOAL E ENCARGOS SOCIAIS", coluna: "DESPESAS LIQUIDADAS ATÉ O BIMESTRE (h)", valor: 3500000000},
+        {conta: "INVESTIMENTOS", coluna: "DESPESAS LIQUIDADAS ATÉ O BIMESTRE (h)", valor: 560000000},
+      ]};
+      if (/Anexo[+ ]12/.test(u)) return {items: [
+        {conta: "PERCENTUAL DA RECEITA DE IMPOSTOS E TRANSFERÊNCIAS CONSTITUCIONAIS E LEGAIS APLICADO EM ASPS", coluna: "DESPESAS LIQUIDADAS (e)", valor: 21.4},
+        {conta: "PERCENTUAL DA RECEITA DE IMPOSTOS E TRANSFERÊNCIAS CONSTITUCIONAIS E LEGAIS APLICADO EM ASPS", coluna: "DESPESAS EMPENHADAS (d)", valor: 23.9},
+      ]};
+      if (/Anexo[+ ]08/.test(u)) return {items: [
+        {conta: "PERCENTUAL DE APLICAÇÃO EM MDE SOBRE A RECEITA LÍQUIDA DE IMPOSTOS", coluna: "VALOR", valor: 19.8},
+        {conta: "VALOR APLICADO EM MDE", coluna: "VALOR", valor: 980000000},
+      ]};
+      return {items: []};
     }
     if (/\/rgf\?/.test(u)) {
       CHAMADAS_RGF.push(u);
@@ -210,16 +239,46 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   await esperar(w, () => /elegível/.test(d.querySelector("#s-fisc")?.textContent || "") && /quadrimestre/.test(d.querySelector("#s-fisc").textContent), 3000, "seção fiscal");
   const fisc = d.querySelector("#s-fisc").textContent.replace(/\s+/g, " ");
   assert(/set\/2026/.test(fisc) && d.querySelector("#s-fisc .letra").textContent === "B", "nota da posição mais recente");
-  assert(/jun\/2026 C/.test(fisc), "trajetória");
+  const hist = [...d.querySelectorAll("#s-fisc table.hist tbody tr")].map(r => [...r.cells].map(c => c.textContent.trim()));
+  assert.strictEqual(hist.length, 2, "histórico com as duas posições");
+  assert.deepStrictEqual(hist[0].slice(0, 6), ["set/2026", "2025", "B", "A", "B", "A"], "posição mais recente primeiro, com nota por indicador");
+  assert.strictEqual(hist[1][2], "C"); assert.strictEqual(hist[1][7], "não elegível");
+  assert.strictEqual(d.querySelectorAll("#s-fisc .ind-capag").length, 4, "quatro cartões de indicador");
+  assert(/Liquidez relativa/.test(fisc) && /\(Caixa bruta − obrigações financeiras\) ÷ RCL/.test(fisc), "fórmula vigente da liquidez");
   assert(/35,2%/.test(fisc) && /91,2%/.test(fisc), "indicadores da CAPAG em %");
   assert(/ODbL/.test(fisc) && /não vincula/.test(fisc), "licença e aviso do Tesouro");
-  assert(/Origem da nota final: Indicadores\. Sem ressalvas\./.test(fisc) && /ICF, ranking do Tesouro/.test(fisc), "origem, observação e ICF");
+  assert(/Origem da nota final: Indicadores\. Sem ressalvas\./.test(fisc) && /Qualidade da informação \(ICF\)/.test(fisc), "origem, observação e ICF");
+  assert(/Portaria Normativa MF nº 1\.583\/2023/.test(fisc), "base legal citada");
+  // distribuição: UF por padrão, com a nota do município marcada; troca para Brasil
+  const segUF = [...d.querySelectorAll("#s-fisc .barra-dist")][0];
+  assert(segUF && segUF.querySelector(".seg.minha") && /B/.test(segUF.querySelector(".seg.minha").textContent), "nota do município marcada");
+  assert(/174 municípios/.test(d.querySelector("#s-fisc .dist").textContent), "total da UF na posição mais recente");
+  d.querySelector('#s-fisc [data-escopo="br"]').click();
+  assert(/5\.570 municípios/.test(d.querySelector("#s-fisc .dist").textContent), "troca para Brasil");
+  d.querySelector('#s-fisc [data-escopo="uf"]').click();
+  // execução orçamentária e pisos
+  const ex = [...d.querySelectorAll("#s-fisc .card")].find(c => /Execução orçamentária/.test(c.textContent)).textContent.replace(/\s+/g, " ");
+  assert(/4º bimestre/.test(ex) && /R\$ 8,00 bi/.test(ex) && /66,7% da previsão/.test(ex), "receita realizada e % da previsão: " + ex.slice(0, 300));
+  assert(/Déficit de R\$ 400,0 mi/.test(ex), "resultado = receita realizada − empenhada");
+  assert(/Dependência de transferências\s*60,0%/.test(ex), "transferências ÷ correntes, sem somar a linha intraorçamentária: " + ex.slice(ex.indexOf("Dependência"), ex.indexOf("Dependência") + 80));
+  assert(/Receita própria\s*30,0%/.test(ex) && /Pessoal e encargos\s*50,0%/.test(ex) && /Investimentos\s*8,0%/.test(ex));
+  assert(/Saúde \(ASPS\)\s*21,4%/.test(ex) && /Educação \(MDE\)\s*19,8%/.test(ex), "pisos: saúde pela coluna liquidada");
+  assert(d.querySelectorAll("#s-fisc .card .medidor.m-acima").length === 1, "educação abaixo de 25% sinalizada");
   assert(/49,7%/.test(fisc) && d.querySelector("#s-fisc .medidor.m-alerta"), "pessoal 49,7% na faixa de alerta");
   assert(!d.querySelector("#s-fisc .alerta"), "medidor não reutiliza a classe do banner de divergência");
   assert(/27,9%/.test(fisc), "DCL do último quadrimestre preenchido (não o vazio, não o exercício anterior)");
   assert(/2º quadrimestre/.test(fisc), "período do RGF");
   assert(CHAMADAS_RGF.length >= 2 && CHAMADAS_RGF.every(u => /nr_periodo=2/.test(u) && /co_poder=E/.test(u)), "RGF do Executivo, não o da Câmara");
   assert(/RCL ajustada: R\$\s?10\.000\.000\.000/.test(fisc), "RCL");
+  // verificação das fontes: recolhida por padrão, resumo visível, escolha lembrada
+  assert(d.querySelector("#verif-corpo").hidden, "detalhes técnicos recolhidos por padrão");
+  assert(/Consistente em 3 fontes\. \d+ de 9 fontes responderam/.test(d.querySelector("#verif-resumo").textContent), d.querySelector("#verif-resumo").textContent);
+  d.querySelector("#b-verif").click();
+  assert(!d.querySelector("#verif-corpo").hidden && d.querySelector("#b-verif").textContent === "Ocultar detalhes");
+  assert.strictEqual(w.localStorage.getItem("bm:verif"), "1", "preferência lembrada");
+  d.querySelector("#b-verif").click();
+  assert(d.querySelector("#verif-corpo").hidden && w.localStorage.getItem("bm:verif") === "0");
+
   // selo de completude e indicadores-chave
   if (BM().S.secoes.ind.status === "carregando") {
     const parcial = BM().completude();
