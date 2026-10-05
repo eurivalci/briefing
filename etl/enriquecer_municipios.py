@@ -121,7 +121,16 @@ SIDRA = "https://servicodados.ibge.gov.br/api/v3/agregados"
 
 def sidra_todos(agregado: int, variavel: int) -> dict[str, tuple]:
     """{codigo: (valor, ano)} do último período, para TODOS os municípios em uma chamada (N6[all])."""
-    d = get_json(f"{SIDRA}/{agregado}/periodos/-1/variaveis/{variavel}?localidades=N6[all]", timeout=180, tentativas=3)
+    d, ultimo = None, None
+    for loc in ("N6%5Ball%5D", "N6"):   # "N6[all]" com colchetes codificados; "N6" é a forma curta equivalente
+        try:
+            d = get_json(f"{SIDRA}/{agregado}/periodos/-1/variaveis/{variavel}?localidades={loc}", timeout=180, tentativas=2)
+            if d:
+                break
+        except Exception as exc:  # noqa: BLE001
+            ultimo = exc
+    if not d:
+        raise ultimo or RuntimeError("SIDRA sem resposta")
     out = {}
     for var in d or []:
         for res in var.get("resultados", []):
