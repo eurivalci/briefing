@@ -105,7 +105,42 @@ main{padding:32px clamp(18px,3.5vw,48px) 80px; min-width:0}
 /* painéis planos, sem sombra; a grade dá a hierarquia */
 .paineis{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:16px}
 .painel{grid-column:span 12; background:var(--sheet); border-radius:var(--r-panel); padding:20px 22px; min-width:0}
-.painel.p-mand{grid-column:span 7} .painel.p-traj{grid-column:span 5}
+.painel.p-traj{grid-column:span 5} .painel.p-sobre{grid-column:span 7}
+.verif-h{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+.verif-h h3{font:600 18px/1.3 var(--serif); margin:0}
+.verif-h .note{flex:1; min-width:200px}
+.verif-corpo{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:16px}
+.verif-corpo[hidden]{display:none}
+.verif-t{font:600 15px/1.3 var(--sans); margin:0 0 10px; color:var(--muted)}
+/* CAPAG */
+.capag{background:var(--surface); border-radius:var(--r-md); padding:18px 20px; margin-bottom:14px}
+.bloco-t{font:600 15px/1.3 var(--sans); margin:0 0 14px}
+.capag-topo{display:flex; gap:18px; align-items:flex-start; margin-bottom:16px}
+.capag-topo .letra{font:700 54px/0.9 var(--serif); min-width:58px}
+.ct-pos{margin:0; font-weight:600} .ct-l{margin:2px 0 4px; color:var(--muted); font-size:14px}
+.g-A{color:var(--ok)} .g-B{color:#8fb0d6} .g-C{color:#d8a254} .g-D{color:var(--warn)} .g-nd{color:var(--faint)}
+.inds-capag{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:var(--line-soft); border-radius:var(--r-md); overflow:hidden; margin-bottom:14px}
+.ind-capag{background:var(--sheet); padding:14px 16px; text-align:center}
+.ic-n{font-size:12.5px; color:var(--muted)}
+.ic-l{font:700 34px/1.1 var(--serif); margin:6px 0 2px}
+.ic-v{font-variant-numeric:tabular-nums; font-weight:600}
+.ic-f{font-size:11.5px; color:var(--faint); margin-top:4px; line-height:1.35}
+.chip-nota{display:inline-grid; place-items:center; min-width:30px; padding:1px 7px; border-radius:6px; font-weight:700; font-size:12.5px; background:var(--raise)}
+.chip-nota.g-A{background:var(--ok-soft)} .chip-nota.g-B{background:rgba(143,176,214,.15)} .chip-nota.g-C{background:rgba(216,162,84,.15)} .chip-nota.g-D{background:var(--warn-soft)}
+table.hist td, table.hist th{padding:7px 12px}
+.ok-t{color:var(--ok)} .warn-t{color:var(--warn)}
+details.sub{margin:6px 0 14px} details.sub summary{cursor:pointer; color:var(--muted); font-size:13.5px; margin-bottom:8px}
+.dist{margin-top:8px}
+.dist-h{display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13.5px; color:var(--muted); margin-bottom:8px}
+.toggle{display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden}
+.toggle button{background:transparent; border:0; padding:4px 12px; font-size:12.5px; color:var(--muted); cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--brass); color:#1b1508; font-weight:600}
+.dist-l{margin-bottom:10px}
+.dist-c{display:flex; justify-content:space-between; gap:10px; font-size:13px; margin-bottom:4px}
+.barra-dist{display:flex; height:24px; border-radius:6px; overflow:hidden; gap:1px; background:var(--line-soft)}
+.seg{display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:600; color:#10151b; white-space:nowrap; overflow:hidden}
+.seg.g-A{background:var(--ok)} .seg.g-B{background:#8fb0d6} .seg.g-C{background:#d8a254} .seg.g-D{background:var(--warn)} .seg.g-nd{background:var(--line); color:var(--muted)}
+.seg.minha{box-shadow:inset 0 0 0 2px var(--text)}
 .painel > h3{font:600 18px/1.3 var(--serif); margin:0 0 14px}
 section.block{margin:0 0 34px}
 .note{color:var(--muted); font-size:13px}
@@ -158,6 +193,10 @@ table.src th{color:var(--muted); font-weight:500; font-size:13px}
 .card h4{font:600 15px/1.3 var(--sans); margin:0 0 12px; color:var(--text)}
 .card .kv{grid-template-columns:minmax(0,1fr) auto}
 .card .kv dd{white-space:nowrap; text-align:right}
+.card .kv.kv-ex{grid-template-columns:minmax(120px,max-content) minmax(0,1fr); gap:8px 16px}
+.card .kv.kv-ex dd{white-space:normal}
+.card .kv.kv-ex dd b{font-weight:600}
+.sub-n{display:block; font-size:12px; color:var(--faint); line-height:1.35}
 .nota-capag{display:flex; align-items:baseline; gap:14px; margin-bottom:12px}
 .nota-capag .letra{font:700 46px/1 var(--serif); color:var(--brass)}
 .nota-capag.ok .letra{color:var(--ok)} .nota-capag.warn .letra{color:var(--warn)}
@@ -186,7 +225,11 @@ details.brutos pre{max-height:280px; overflow:auto; background:var(--ink); borde
 .toast.show{opacity:1}
 
 @media (max-width:1100px){
-  .painel.p-mand, .painel.p-traj{grid-column:span 12}
+  .painel.p-traj, .painel.p-sobre{grid-column:span 12}
+}
+@media (max-width:760px){
+  .verif-corpo{grid-template-columns:1fr}
+  .inds-capag{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:860px){
   .app{grid-template-columns:1fr}
@@ -475,12 +518,17 @@ const Fontes = {
   },
 
   async capag(uf, cod) {
-    const d = await fetchJSON(CONFIG.capagUrl(uf), {retries: 0, timeout: 15000});
-    return {trajetoria: (d.municipios || {})[cod] || null, posicoes: d.posicoes || [], aviso: d.aviso, licenca: d.licenca,
-      fonte: d.fonte, gerado_em: d.gerado_em};
+    const [d, dist] = await Promise.allSettled([
+      fetchJSON(CONFIG.capagUrl(uf), {retries: 0, timeout: 15000}),
+      fetchJSON("./data/capag/_distribuicao.json", {retries: 0, timeout: 15000}),
+    ]);
+    if (d.status === "rejected") throw d.reason;
+    const v = d.value;
+    return {trajetoria: (v.municipios || {})[cod] || null, posicoes: v.posicoes || [], aviso: v.aviso, licenca: v.licenca,
+      fonte: v.fonte, gerado_em: v.gerado_em, distribuicao: dist.status === "fulfilled" ? dist.value.posicoes || [] : []};
   },
 
-  /** SICONFI ao vivo: extrato de entregas e RGF (pessoal e dívida) do último período entregue. */
+  /** SICONFI ao vivo: extrato de entregas, último RGF (pessoal e dívida) e último RREO (execução e pisos). */
   async siconfi(cod) {
     const ano = new Date().getFullYear();
     const ords = async (rota, params) => {
@@ -492,29 +540,54 @@ const Fontes = {
       ords("extrato_entregas", {id_ente: cod, an_referencia: ano}),
       ords("extrato_entregas", {id_ente: cod, an_referencia: ano - 1}),
     ]);
-    const extrato = [...(atual.value || []), ...(anterior.value || [])];
-    const out = {extrato, ano, rgf: null, pessoal: null, dcl: null, brutos: {}};
     if (atual.status === "rejected" && anterior.status === "rejected") throw atual.reason;
-    const rgfs = extrato.filter(i => /gest[aã]o fiscal|\brgf\b/i.test(campo(i, CAMPOS.entregavel)) && !/c[aâ]mara|legislativ/i.test(campo(i, CAMPOS.instituicao)))
-      .sort((a, b) => (+campo(b, CAMPOS.exercicio) - +campo(a, CAMPOS.exercicio)) || (+campo(b, CAMPOS.periodo) - +campo(a, CAMPOS.periodo)));
-    const alvo = rgfs[0];
-    if (!alvo) return out;
-    const per = String(campo(alvo, CAMPOS.periodicidade) || "Q").toUpperCase().startsWith("S") ? "S" : "Q";
-    const base = {an_exercicio: campo(alvo, CAMPOS.exercicio), in_periodicidade: per, nr_periodo: campo(alvo, CAMPOS.periodo),
-      co_esfera: "M", co_poder: "E", id_ente: cod};
-    out.rgf = {exercicio: base.an_exercicio, periodo: base.nr_periodo, periodicidade: per};
-    for (const tipo of ["RGF", "RGF Simplificado"]) {
-      const [a1, a2] = await Promise.allSettled([
-        ords("rgf", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RGF-Anexo 01"}),
-        ords("rgf", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RGF-Anexo 02"}),
-      ]);
-      const i1 = a1.value || [], i2 = a2.value || [];
-      if (i1.length || i2.length) {
-        out.rgf.tipo = tipo; out.brutos.anexo01 = i1; out.brutos.anexo02 = i2;
-        out.pessoal = lerPessoal(i1); out.dcl = lerDCL(i2);
-        break;
+    const extrato = [...(atual.value || []), ...(anterior.value || [])];
+    const out = {extrato, ano, rgf: null, pessoal: null, dcl: null, rreo: null, execucao: null, saude: null, educacao: null, brutos: {}};
+    const doExecutivo = (re) => extrato.filter(i => re.test(campo(i, CAMPOS.entregavel)) && !/c[aâ]mara|legislativ/i.test(campo(i, CAMPOS.instituicao)))
+      .sort((a, b) => (+campo(b, CAMPOS.exercicio) - +campo(a, CAMPOS.exercicio)) || (+campo(b, CAMPOS.periodo) - +campo(a, CAMPOS.periodo)))[0];
+
+    const tarefaRGF = (async () => {
+      const alvo = doExecutivo(/gest[aã]o fiscal|\brgf\b/i);
+      if (!alvo) return;
+      const per = String(campo(alvo, CAMPOS.periodicidade) || "Q").toUpperCase().startsWith("S") ? "S" : "Q";
+      const base = {an_exercicio: campo(alvo, CAMPOS.exercicio), in_periodicidade: per, nr_periodo: campo(alvo, CAMPOS.periodo),
+        co_esfera: "M", co_poder: "E", id_ente: cod};
+      out.rgf = {exercicio: base.an_exercicio, periodo: base.nr_periodo, periodicidade: per};
+      for (const tipo of ["RGF", "RGF Simplificado"]) {
+        const [a1, a2] = await Promise.allSettled([
+          ords("rgf", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RGF-Anexo 01"}),
+          ords("rgf", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RGF-Anexo 02"}),
+        ]);
+        const i1 = a1.value || [], i2 = a2.value || [];
+        if (i1.length || i2.length) {
+          out.rgf.tipo = tipo; out.brutos.anexo01 = i1; out.brutos.anexo02 = i2;
+          out.pessoal = lerPessoal(i1); out.dcl = lerDCL(i2);
+          break;
+        }
       }
-    }
+    })();
+
+    const tarefaRREO = (async () => {
+      const alvo = doExecutivo(/resumido|\brreo\b/i);
+      if (!alvo) return;
+      const base = {an_exercicio: campo(alvo, CAMPOS.exercicio), nr_periodo: campo(alvo, CAMPOS.periodo), co_esfera: "M", id_ente: cod};
+      out.rreo = {exercicio: base.an_exercicio, periodo: base.nr_periodo};
+      for (const tipo of ["RREO", "RREO Simplificado"]) {
+        const [r1, r8, r12] = await Promise.allSettled([
+          ords("rreo", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RREO-Anexo 01"}),
+          ords("rreo", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RREO-Anexo 08"}),
+          ords("rreo", {...base, co_tipo_demonstrativo: tipo, no_anexo: "RREO-Anexo 12"}),
+        ]);
+        const i1 = r1.value || [], i8 = r8.value || [], i12 = r12.value || [];
+        if (i1.length || i8.length || i12.length) {
+          out.rreo.tipo = tipo; out.brutos.rreo01 = i1; out.brutos.rreo08 = i8; out.brutos.rreo12 = i12;
+          out.execucao = lerExecucao(i1); out.educacao = lerPiso(i8, "educacao"); out.saude = lerPiso(i12, "saude");
+          break;
+        }
+      }
+    })();
+
+    await Promise.allSettled([tarefaRGF, tarefaRREO]);
     return out;
   },
 
@@ -605,6 +678,51 @@ function lerDCL(items) {
   const dcl = ultimo(linhaDcl), rcl = dcl && items.find(i => linhaRcl(i) && i.coluna === dcl.coluna && num(i.valor));
   if (dcl && rcl) return {reconhecido: true, pct: 100 * num(dcl.valor) / num(rcl.valor), coluna: dcl.coluna, origem: "calculado (DCL ÷ RCL ajustada)"};
   return {reconhecido: false};
+}
+
+/** RREO Anexo 1 (balanço orçamentário). Linhas repetem na seção intraorçamentária: vale o maior valor da coluna. */
+function lerExecucao(items) {
+  if (!items.length) return {reconhecido: false};
+  const col = {
+    previsao: (c) => /PREVIS[AÃ]O ATUALIZADA/.test(up(c)),
+    realizada: (c) => /AT[EÉ] O BIMESTRE/.test(up(c)) && !/%|EMPENHAD|LIQUIDAD|PAGA/.test(up(c)),
+    dotacao: (c) => /DOTA[CÇ][AÃ]O ATUALIZADA/.test(up(c)),
+    empenhada: (c) => /EMPENHADAS AT[EÉ] O BIMESTRE/.test(up(c)),
+    liquidada: (c) => /LIQUIDADAS AT[EÉ] O BIMESTRE/.test(up(c)),
+  };
+  const valor = (linha, coluna) => {
+    const vs = items.filter(i => linha(up(i.conta), cc(i.cod_conta)) && coluna(i.coluna)).map(i => num(i.valor)).filter(v => v != null);
+    return vs.length ? Math.max(...vs) : null;
+  };
+  const L = {
+    receitas: (t, k) => /^RECEITAS \(EXCETO INTRA/.test(t) || k === "receitasexcetointraorcamentarias",
+    correntes: (t) => /^RECEITAS CORRENTES/.test(t),
+    proprias: (t) => /^IMPOSTOS, TAXAS E CONTRIBUI/.test(t),
+    transf: (t) => /^TRANSFER[EÊ]NCIAS CORRENTES/.test(t),
+    despesas: (t, k) => /^DESPESAS \(EXCETO INTRA/.test(t) || k === "despesasexcetointraorcamentarias",
+    pessoal: (t) => /^PESSOAL E ENCARGOS SOCIAIS/.test(t),
+    invest: (t) => /^INVESTIMENTOS/.test(t),
+  };
+  const e = {
+    receitaPrevista: valor(L.receitas, col.previsao), receitaRealizada: valor(L.receitas, col.realizada),
+    correntes: valor(L.correntes, col.realizada), proprias: valor(L.proprias, col.realizada), transferencias: valor(L.transf, col.realizada),
+    dotacao: valor(L.despesas, col.dotacao), empenhada: valor(L.despesas, col.empenhada), liquidada: valor(L.despesas, col.liquidada),
+    pessoal: valor(L.pessoal, col.liquidada), investimentos: valor(L.invest, col.liquidada),
+  };
+  e.reconhecido = e.receitaRealizada != null || e.empenhada != null;
+  return e;
+}
+
+/** Pisos constitucionais (RREO Anexo 12 saúde, Anexo 8 educação): a linha de PERCENTUAL aplicado. */
+function lerPiso(items, tipo) {
+  if (!items.length) return {reconhecido: false};
+  const alvo = tipo === "saude" ? /ASPS|SA[UÚ]DE/ : /\bMDE\b|MANUTEN[CÇ][AÃ]O E DESENVOLVIMENTO DO ENSINO/;
+  const linhas = items.filter(i => /PERCENTUAL|% DE APLICA|APLICADO EM/.test(up(i.conta)) && alvo.test(up(i.conta))
+    && num(i.valor) != null && num(i.valor) >= 0 && num(i.valor) <= 100);
+  // prefere a coluna de despesa liquidada; senão a primeira coluna com percentual
+  const pref = linhas.find(i => /LIQUIDAD/.test(up(i.coluna))) || linhas.find(i => /%|PERCENTUAL|VALOR/.test(up(i.coluna))) || linhas[0];
+  if (!pref) return {reconhecido: false};
+  return {reconhecido: true, pct: num(pref.valor), coluna: pref.coluna, minimo: tipo === "saude" ? 15 : 25};
 }
 
 /* ================================================================ estado */
@@ -724,14 +842,30 @@ function montarDoc() {
       <div id="s-kpi" class="kpis" aria-label="Indicadores-chave"></div>
     </section>
     <div class="paineis">
-      <section class="painel p-mand" aria-labelledby="h-mand"><h3 id="h-mand">Situação do mandato</h3><div id="s-mand"></div></section>
-      <section class="painel p-traj" aria-labelledby="h-traj"><h3 id="h-traj">Trajetória do prefeito</h3><div id="s-traj"></div></section>
       <section class="painel" aria-labelledby="h-fisc"><h3 id="h-fisc">Situação fiscal</h3><div id="s-fisc"></div></section>
       <section class="painel" aria-labelledby="h-ind"><h3 id="h-ind">Indicadores do município</h3><div id="s-ind"></div></section>
-      <section class="painel" aria-labelledby="h-sobre"><h3 id="h-sobre">Sobre o município</h3><div id="s-sobre"></div></section>
-      <section class="painel" aria-labelledby="h-fontes"><h3 id="h-fontes">Fontes e proveniência</h3><div id="s-fontes"></div></section>
+      <section class="painel p-traj" aria-labelledby="h-traj"><h3 id="h-traj">Trajetória do prefeito</h3><div id="s-traj"></div></section>
+      <section class="painel p-sobre" aria-labelledby="h-sobre"><h3 id="h-sobre">Sobre o município</h3><div id="s-sobre"></div></section>
+      <section class="painel verif" aria-labelledby="h-verif">
+        <div class="verif-h"><h3 id="h-verif">Verificação das fontes</h3><span id="verif-resumo" class="note"></span>
+          <button class="btn small" id="b-verif" aria-expanded="false" aria-controls="verif-corpo">Exibir detalhes</button></div>
+        <div id="verif-corpo" class="verif-corpo" hidden>
+          <div><h4 class="verif-t" id="h-mand">Situação do mandato</h4><div id="s-mand"></div></div>
+          <div><h4 class="verif-t" id="h-fontes">Fontes e proveniência</h4><div id="s-fontes"></div></div>
+        </div>
+      </section>
     </div>`;
+  aplicarVerif(lerVerif());
   render();
+}
+
+function lerVerif() { try { return localStorage.getItem("bm:verif") === "1"; } catch { return false; } }
+function aplicarVerif(aberto) {
+  const corpo = $("#verif-corpo"), b = $("#b-verif");
+  if (!corpo || !b) return;
+  corpo.hidden = !aberto;
+  b.setAttribute("aria-expanded", String(aberto));
+  b.textContent = aberto ? "Ocultar detalhes" : "Exibir detalhes";
 }
 
 function render() {
@@ -746,6 +880,7 @@ function render() {
   pintar("s-traj", rTraj());
   pintar("s-sobre", rSobre());
   pintar("s-fontes", rFontes());
+  pintar("verif-resumo", rVerifResumo());
 }
 
 function rHead() {
@@ -948,33 +1083,118 @@ function medidor(rotulo, v, faixas, maxEscala, legenda) {
 
 function rFiscal() {
   if (S.uf === "DF") return `<p class="note">O Distrito Federal tem regime fiscal de estado; a seção municipal não se aplica.</p>`;
-  return `<div class="fisc">${rCapag()}${rSiconfi()}</div>`;
+  return `${rCapag()}<div class="fisc">${rSiconfi()}${rExecucao()}</div>`;
 }
 
+const classeNota = (n) => !n ? "g-nd" : /^A/.test(n) ? "g-A" : /^B/.test(n) ? "g-B" : n === "C" ? "g-C" : n === "D" ? "g-D" : "g-nd";
+const chipNota = (n) => `<span class="chip-nota ${classeNota(n)}">${esc(n || "n.d.")}</span>`;
+const ORDEM_NOTAS = ["A+", "A", "B+", "B", "C", "D", "n.d."];
+
 function rCapag() {
-  const s = S.secoes.capag;
-  if (!s || s.status === "carregando") return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4>${skel(4)}</div>`;
-  if (s.status === "erro") return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4>
-    <p class="note">Base da CAPAG indisponível (${esc(s.erro)}). Ela é gerada pelo ETL semanal.</p></div>`;
+  const s = S.secoes.capag, tit = `<h4 class="bloco-t">Capacidade de pagamento (CAPAG)</h4>`;
+  if (!s || s.status === "carregando") return `<div class="capag">${tit}${skel(5)}</div>`;
+  if (s.status === "erro") return `<div class="capag">${tit}<p class="note">Base da CAPAG indisponível (${esc(s.erro)}). Ela é gerada pelo ETL semanal.</p></div>`;
   const d = s.dados, t = d.trajetoria;
-  if (!t || !t.length) return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4><p class="note">Município ausente nas posições publicadas pelo Tesouro.</p></div>`;
-  const u = t[t.length - 1];
-  const boa = u.capag && /^[AB]/.test(u.capag);
-  const linha = (nome, fr, nota, def) => `<dt>${esc(nome)}<span class="def">${esc(def)}</span></dt><dd>${fr != null ? fmtPct(100 * fr) : "—"}${nota ? ` <span class="party" style="margin-left:6px">${esc(nota)}</span>` : ""}</dd>`;
-  return `<div class="card"><h4>Capacidade de pagamento (CAPAG)</h4>
-    <div class="nota-capag ${u.capag ? (boa ? "ok" : "warn") : ""}"><span class="letra">${esc(u.capag || "n.d.")}</span>
-      <span class="sub">posição de ${esc(fmtPos(u.posicao))}, ano-base ${esc(u.ano_base)}<br>
-      ${u.capag ? (boa ? "Em regra, elegível a operação de crédito com garantia da União." : "Em regra, não elegível a operação com garantia da União.")
-        : `Nota não calculada pelo Tesouro${u.capag_publicada ? ` (publicado: “${esc(u.capag_publicada)}”)` : ""}. Costuma indicar declaração obrigatória não homologada no SICONFI.`}</span></div>
-    <dl class="kv">
-      ${linha("Endividamento", u.endividamento, u.nota_endividamento, "dívida consolidada ÷ RCL")}
-      ${linha("Poupança corrente", u.poupanca_corrente, u.nota_poupanca_corrente, "despesa corrente ÷ receita corrente ajustada")}
-      ${linha("Liquidez", u.liquidez, u.nota_liquidez, "obrigações financeiras ÷ caixa")}
-      ${u.qualidade_informacao != null ? `<dt>Qualidade da informação<span class="def">ICF, ranking do Tesouro</span></dt><dd>${esc(u.qualidade_informacao)}</dd>` : ""}
+  if (!t || !t.length) return `<div class="capag">${tit}<p class="note">Município ausente nas posições publicadas pelo Tesouro.</p></div>`;
+  const u = t[t.length - 1], boa = u.capag && /^[AB]/.test(u.capag);
+  const relativa = (u.ano_capag || +String(u.posicao).slice(0, 4)) >= 2024;
+  const ind = (nome, fr, nota, formula) => `<div class="ind-capag"><div class="ic-n">${esc(nome)}</div>
+    <div class="ic-l ${classeNota(nota)}">${esc(nota || "—")}</div>
+    <div class="ic-v">${fr != null ? fmtPct(100 * fr) : "—"}</div><div class="ic-f">${esc(formula)}</div></div>`;
+  const plus = u.capag && /\+$/.test(u.capag);
+  const leitura = u.capag
+    ? `${boa ? "Em regra, elegível a operação de crédito com garantia da União." : "Em regra, não elegível a operação com garantia da União."}${plus ? " O “+” é concedido a quem tem nota A ou B e alcança nota máxima no ICF (qualidade da informação contábil e fiscal)." : ""}`
+    : `Nota não calculada pelo Tesouro${u.capag_publicada ? ` (publicado: “${esc(u.capag_publicada)}”)` : ""}. Costuma indicar declaração obrigatória não homologada no SICONFI.`;
+
+  const hist = t.slice().reverse().map(x => {
+    const ok = x.capag && /^[AB]/.test(x.capag);
+    return `<tr><td>${esc(fmtPos(x.posicao))}</td><td class="note">${esc(x.ano_base)}</td><td>${chipNota(x.capag)}</td>
+      <td>${x.nota_endividamento ? chipNota(x.nota_endividamento) : "—"}</td><td>${x.nota_poupanca_corrente ? chipNota(x.nota_poupanca_corrente) : "—"}</td>
+      <td>${x.nota_liquidez ? chipNota(x.nota_liquidez) : "—"}</td><td>${x.qualidade_informacao != null ? esc(x.qualidade_informacao) : "—"}</td>
+      <td class="${ok ? "ok-t" : x.capag ? "warn-t" : "note"}">${x.capag ? (ok ? "elegível" : "não elegível") : "sem nota"}</td></tr>`;
+  }).join("");
+
+  const escopo = S.capagEscopo || "uf";
+  const distr = (d.distribuicao || []).slice(-3).reverse().map(p => {
+    const cont = escopo === "uf" ? (p.ufs || {})[S.uf] || {} : p.brasil || {};
+    const total = Object.values(cont).reduce((a, b) => a + b, 0);
+    if (!total) return "";
+    const minha = (t.find(x => x.posicao === p.posicao) || {}).capag || "n.d.";
+    const segs = ORDEM_NOTAS.filter(n => cont[n]).map(n => {
+      const pct = 100 * cont[n] / total;
+      return `<span class="seg ${classeNota(n === "n.d." ? null : n)} ${n === minha ? "minha" : ""}" style="flex:${pct.toFixed(2)}"
+        title="${esc(n)}: ${fmtNum(cont[n])} municípios (${fmtNum(pct, 1)}%)">${pct >= 7 ? `${esc(n)} ${fmtNum(pct, 0)}%` : ""}${n === minha ? " ◂" : ""}</span>`;
+    }).join("");
+    return `<div class="dist-l"><div class="dist-c"><b>${esc(fmtPos(p.posicao))}</b><span class="note">${fmtNum(total)} municípios, ${esc(S.secoes.local?.dados?.nome || "")}: ${esc(minha)}</span></div>
+      <div class="barra-dist" role="img" aria-label="Distribuição das notas em ${esc(fmtPos(p.posicao))}">${segs}</div></div>`;
+  }).join("");
+
+  return `<div class="capag">${tit}
+    <div class="capag-topo"><span class="letra ${classeNota(u.capag)}">${esc(u.capag || "n.d.")}</span>
+      <div><p class="ct-pos">Posição de ${esc(fmtPos(u.posicao))}, ano-base ${esc(u.ano_base)}</p><p class="ct-l">${leitura}</p>
+      ${u.origem_nota || u.observacao ? `<p class="note">${u.origem_nota ? `Origem da nota final: ${esc(u.origem_nota)}.` : ""}${u.observacao ? ` ${esc(u.observacao)}${/[.!?]$/.test(u.observacao) ? "" : "."}` : ""}</p>` : ""}</div></div>
+    <div class="inds-capag">
+      ${ind("Endividamento", u.endividamento, u.nota_endividamento, "Dívida consolidada ÷ RCL")}
+      ${ind("Poupança corrente", u.poupanca_corrente, u.nota_poupanca_corrente, "Despesa corrente ÷ receita corrente ajustada (média ponderada de 3 exercícios)")}
+      ${ind(relativa ? "Liquidez relativa" : "Liquidez", u.liquidez, u.nota_liquidez, relativa ? "(Caixa bruta − obrigações financeiras) ÷ RCL" : "Obrigações financeiras ÷ disponibilidade de caixa")}
+      <div class="ind-capag"><div class="ic-n">Qualidade da informação (ICF)</div><div class="ic-l ${classeNota(u.qualidade_informacao && String(u.qualidade_informacao).replace(/icf$/i, ""))}">${esc(u.qualidade_informacao ?? "—")}</div>
+        <div class="ic-v">&nbsp;</div><div class="ic-f">Ranking da qualidade da informação contábil e fiscal no SICONFI</div></div>
+    </div>
+    ${t.length > 1 ? `<details class="sub" open><summary>Histórico por posição (${t.length})</summary><div class="tablewrap"><table class="src hist">
+      <thead><tr><th>Posição</th><th>Ano-base</th><th>Nota</th><th>Endiv.</th><th>Poupança</th><th>Liquidez</th><th>ICF</th><th>Garantia da União</th></tr></thead>
+      <tbody>${hist}</tbody></table></div></details>` : ""}
+    ${distr ? `<div class="dist"><div class="dist-h"><span>Onde o município está</span>
+      <span class="toggle" role="group" aria-label="Comparar com"><button data-escopo="uf" aria-pressed="${escopo === "uf"}">${esc(S.uf)}</button><button data-escopo="br" aria-pressed="${escopo === "br"}">Brasil</button></span></div>
+      ${distr}<p class="note">◂ e contorno marcam a nota deste município.</p></div>` : ""}
+    <p class="attrib">${esc(d.aviso || "Notas lidas da publicação oficial, sem recálculo.")} Faixas e regras: ${link("https://www.legisweb.com.br/legislacao/?id=453124", "Portaria Normativa MF nº 1.583/2023")}. Fonte: Tesouro Nacional, dados sob licença ODbL.</p>
+  </div>`;
+}
+
+function rExecucao() {
+  const s = S.secoes.siconfi, t_ = "Execução orçamentária";
+  if (!s || s.status === "carregando") return `<div class="card"><h4>${t_}</h4>${skel(5)}</div>`;
+  if (s.status === "erro") return `<div class="card"><h4>${t_}</h4><p class="note">SICONFI indisponível.</p></div>`;
+  const d = s.dados, e = d.execucao;
+  if (!d.rreo) return `<div class="card"><h4>${t_}</h4><p class="note">Nenhum RREO do Executivo encontrado no extrato de entregas de ${d.ano - 1}–${d.ano}.</p></div>`;
+  const per = `${d.rreo.periodo}º bimestre de ${d.rreo.exercicio}`;
+  if (!e || !e.reconhecido) return `<div class="card"><h4>${t_}</h4><p class="note">Último RREO: ${esc(per)}. Linhas do balanço orçamentário não identificadas (veja os dados brutos).</p>${brutos(d)}</div>`;
+  const brl = (v) => v == null ? "—" : fmtBRLc(v);
+  const pct = (a, b) => a != null && b ? fmtPct(100 * a / b) : "—";
+  const resultado = e.receitaRealizada != null && e.empenhada != null ? e.receitaRealizada - e.empenhada : null;
+  const linha = (k, v, extra = "") => `<dt>${esc(k)}</dt><dd><b>${v}</b>${extra ? `<span class="sub-n">${extra}</span>` : ""}</dd>`;
+  const piso = (nome, p) => p && p.reconhecido
+    ? medidorPiso(nome, p.pct, p.minimo)
+    : `<p class="note">${esc(nome)}: percentual não identificado no anexo.</p>`;
+  return `<div class="card"><h4>${t_}</h4>
+    <p class="note" style="margin:-6px 0 12px">Acumulado até o ${esc(per)} (RREO)</p>
+    <dl class="kv kv-ex">
+      ${linha("Receita realizada", brl(e.receitaRealizada), e.receitaPrevista ? `${pct(e.receitaRealizada, e.receitaPrevista)} da previsão atualizada` : "")}
+      ${linha("Despesa empenhada", brl(e.empenhada), e.dotacao ? `${pct(e.empenhada, e.dotacao)} da dotação` : "")}
+      ${linha("Despesa liquidada", brl(e.liquidada))}
+      ${resultado != null ? `<dt>Resultado orçamentário</dt><dd><b class="${resultado >= 0 ? "ok-t" : "warn-t"}">${resultado >= 0 ? "Superávit" : "Déficit"} de ${brl(Math.abs(resultado))}</b><span class="sub-n">receita realizada menos despesa empenhada</span></dd>` : ""}
+      ${linha("Dependência de transferências", pct(e.transferencias, e.correntes), "transferências correntes ÷ receitas correntes")}
+      ${linha("Receita própria", pct(e.proprias, e.correntes), "impostos, taxas e contribuições ÷ receitas correntes")}
+      ${linha("Pessoal e encargos", pct(e.pessoal, e.liquidada), "da despesa liquidada")}
+      ${linha("Investimentos", pct(e.investimentos, e.liquidada), "da despesa liquidada")}
     </dl>
-    ${u.origem_nota || u.observacao ? `<p class="note" style="margin:10px 0 0">${u.origem_nota ? `Origem da nota final: ${esc(u.origem_nota)}.` : ""}${u.observacao ? ` ${esc(u.observacao)}${/[.!?]$/.test(u.observacao) ? "" : "."}` : ""}</p>` : ""}
-    ${t.length > 1 ? `<div class="traj" aria-label="Trajetória da nota">${t.map(x => `<span title="ano-base ${esc(x.ano_base)}">${esc(fmtPos(x.posicao))} <b>${esc(x.capag || "n.d.")}</b></span>`).join("")}</div>` : ""}
-    <p class="attrib">${esc(d.aviso || "")} Fonte: Tesouro Nacional, dados sob licença ODbL.</p></div>`;
+    <div style="margin-top:14px">${piso("Saúde (ASPS)", d.saude)}${piso("Educação (MDE)", d.educacao)}</div>
+    <p class="note">Pisos apurados no acumulado do ano; o cumprimento é verificado no exercício fechado.</p>
+    <p class="attrib">Fonte: SICONFI (Tesouro Nacional), RREO anexos 1, 8 e 12, consulta em tempo real.</p></div>`;
+}
+
+const fmtBRLc = (v) => {
+  const a = Math.abs(v), sinal = v < 0 ? "−" : "";
+  if (a >= 1e9) return `${sinal}R$ ${fmtNum(a / 1e9, 2)} bi`;
+  if (a >= 1e6) return `${sinal}R$ ${fmtNum(a / 1e6, 1)} mi`;
+  return `${sinal}${fmtBRL(a)}`;
+};
+
+function medidorPiso(rotulo, v, minimo) {
+  const ok = v >= minimo, pos = (x) => Math.max(0, Math.min(100, 100 * x / 50));
+  return `<div class="medidor ${ok ? "" : "m-acima"}"><div class="rot"><span>${esc(rotulo)}</span><b>${fmtPct(v)}</b></div>
+    <div class="trilho" role="img" aria-label="${esc(rotulo)}: ${fmtPct(v)}, mínimo ${minimo}%"><div class="enchido" style="width:${pos(v).toFixed(1)}%"></div>
+    <span class="marca" style="left:${pos(minimo).toFixed(1)}%"></span></div>
+    <div class="leg">Mínimo constitucional de ${minimo}% ${ok ? "atingido" : "ainda não atingido"} no acumulado.</div></div>`;
 }
 
 function rSiconfi() {
@@ -1020,6 +1240,9 @@ function brutos(d) {
   const partes = [];
   if (d.brutos?.anexo01?.length) partes.push(`RGF-Anexo 01 (${d.brutos.anexo01.length} linhas)\nanexo | cod_conta | conta | coluna | valor\n${amostra(d.brutos.anexo01)}`);
   if (d.brutos?.anexo02?.length) partes.push(`RGF-Anexo 02 (${d.brutos.anexo02.length} linhas)\n${amostra(d.brutos.anexo02)}`);
+  for (const [k, nome] of [["rreo01", "RREO-Anexo 01"], ["rreo08", "RREO-Anexo 08"], ["rreo12", "RREO-Anexo 12"]]) {
+    if (d.brutos?.[k]?.length) partes.push(`${nome} (${d.brutos[k].length} linhas)\n${amostra(d.brutos[k])}`);
+  }
   if (d.extrato?.length) partes.push(`Extrato de entregas — campos: ${Object.keys(d.extrato[0]).join(", ")}`);
   return partes.length ? `<details class="brutos"><summary>Ver dados brutos (diagnóstico)</summary><pre>${esc(partes.join("\n\n"))}</pre></details>` : "";
 }
@@ -1069,6 +1292,14 @@ const NOMES_FONTE = {
   capag: ["Tesouro — CAPAG (via ETL)", "Capacidade de pagamento e trajetória"],
   siconfi: ["SICONFI — Tesouro Nacional", "RGF (pessoal e dívida) e entregas"],
 };
+function rVerifResumo() {
+  if (S.uf === "DF") return "";
+  const r = reconciliar();
+  const st = SECOES.map(k => S.secoes[k]?.status || "carregando");
+  const prontas = st.filter(x => x === "ok" || x === "vazio").length, falhas = st.filter(x => x === "erro").length;
+  return esc(`${r.titulo}. ${prontas} de ${SECOES.length} fontes responderam${falhas ? `, ${falhas} com falha` : ""}.`);
+}
+
 function rFontes() {
   const linhas = SECOES.map(k => {
     const s = S.secoes[k] || {status: "carregando"}, [nome, uso] = NOMES_FONTE[k];
@@ -1201,6 +1432,13 @@ function ligarEventos() {
   });
   $("#doc").addEventListener("click", e => {
     const t = e.target;
+    if (t.id === "b-verif") {
+      const aberto = $("#verif-corpo").hidden;
+      aplicarVerif(aberto);
+      try { localStorage.setItem("bm:verif", aberto ? "1" : "0"); } catch {}
+      return;
+    }
+    if (t.dataset && t.dataset.escopo) { S.capagEscopo = t.dataset.escopo; render(); return; }
     if (t.id === "b-print") window.print();
     else if (t.id === "b-md") copiar(markdown(), "Briefing copiado em Markdown.");
     else if (t.id === "b-link") copiar(location.href, "Link copiado.");

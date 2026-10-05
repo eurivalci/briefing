@@ -75,6 +75,10 @@ Depois, faça commit de `data/prefeitos/` e push. O Vercel publica sozinho.
 
 **Ficha na listagem.** Clicar numa linha abre a ficha do município em modal, com os mesmos blocos em versão compacta e a CAPAG carregada sob demanda. As setas ← → percorrem a ordem do filtro atual (a tabela acompanha a página), `Esc` fecha e devolve o foco, e o endereço ganha `ficha=<código>`, então a ficha aberta pode ser compartilhada por link. Ctrl/Cmd-clique continua abrindo o briefing completo numa nova aba.
 
+**Verificação das fontes.** "Situação do mandato" e "Fontes e proveniência" ficam lado a lado num painel recolhível, fechado por padrão e com a escolha lembrada no navegador. Fechado, ele mostra uma linha de resumo.
+
+**PDF da ficha.** O botão "Gerar PDF" imprime só a ficha, em tema claro, com o nome do município como nome sugerido do arquivo.
+
 ## Uso em outros sistemas
 
 O ETL publica um consolidado nacional em endereço fixo, com CORS liberado:
@@ -118,6 +122,10 @@ O log do passo "CAPAG" mostra, para cada posição, qual cabeçalho foi lido com
 **Licença.** A CAPAG é publicada sob ODbL. Por decisão do produto, ela aparece só no briefing e **não** entra no `todos.json` nem nas exportações. Os arquivos `data/capag/<uf>.json` levam o aviso de licença e a atribuição ao Tesouro, e o Vercel não libera CORS para eles.
 
 **SICONFI (ao vivo).** O briefing consulta o extrato de entregas do município, localiza o último RGF do **Executivo** (o RGF da Câmara tem outro limite e é ignorado) e lê o Anexo 1 (despesa com pessoal ÷ RCL, limites de 48,6%, 51,3% e 54%) e o Anexo 2 (dívida consolidada líquida ÷ RCL, limite de 120%). Se a linha publicada em percentual não for encontrada, o valor é calculado a partir das linhas em reais, e a origem do número aparece na tela. Se nada for reconhecido, aparece "linha não identificada", nunca um número inventado. O botão **"Ver dados brutos"** mostra as linhas recebidas, para diagnóstico.
+
+**Execução orçamentária (RREO, ao vivo).** Do último RREO do Executivo, o briefing lê o Anexo 1 (receita prevista e realizada, despesa empenhada e liquidada, resultado orçamentário, dependência de transferências, receita própria, pessoal e investimentos), o Anexo 12 (piso da saúde, 15%) e o Anexo 8 (piso da educação, 25%). Os pisos aparecem no acumulado do ano, com a ressalva de que o cumprimento é verificado no exercício fechado. Linhas que se repetem na seção intraorçamentária não são somadas.
+
+**CAPAG em detalhe.** Cartões por indicador com a fórmula oficial da Portaria Normativa MF nº 1.583/2023 (liquidez relativa = (caixa bruta − obrigações financeiras) ÷ RCL desde a CAPAG 2024), histórico por posição com a nota de cada indicador e a garantia da União, e a distribuição das notas na UF e no Brasil com o município marcado (`data/capag/_distribuicao.json`). As faixas numéricas de cada nota não são exibidas porque as fontes públicas divergem entre portarias; o link leva ao texto vigente. Quando o leitor da planilha melhora, a constante `PARSER_VERSAO` sobe e as posições em cache são reprocessadas.
 
 Os rótulos de linha do RGF não puderam ser conferidos contra a API real durante o desenvolvimento. Se algum município mostrar "linha não identificada", um print dos dados brutos basta para ajustar a leitura. O RREO (saúde, educação, resultado primário) fica para a próxima rodada, depois dessa conferência.
 

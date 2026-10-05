@@ -148,6 +148,16 @@ details.api pre{background:var(--ink); border:1px solid var(--line-soft); border
 .f-rodape .primario{background:var(--brass); color:#1b1508; border:0; border-radius:8px; padding:8px 14px; font-weight:600; text-decoration:none; font-size:13.5px}
 .f-rodape .fontes{font-size:11.5px; color:var(--faint); max-width:52ch}
 #tbody tr{cursor:pointer}
+@media print{
+  body.imprimindo-ficha > *:not(#ficha-fundo){display:none!important}
+  body.imprimindo-ficha{background:#fff}
+  body.imprimindo-ficha .ficha-fundo{position:static; background:none; backdrop-filter:none; padding:0; display:block}
+  body.imprimindo-ficha .ficha{width:100%; border:0; box-shadow:none; animation:none; background:#fff; color:#111;
+    --surface:#fff; --sheet:#f5f5f3; --raise:#ececea; --line:#ccc; --line-soft:#ddd; --text:#111; --muted:#444; --faint:#666; --brass:#7a5a12; --ok:#1f7a5c; --warn:#a63d22}
+  body.imprimindo-ficha .f-barra, body.imprimindo-ficha .f-rodape .acoes{display:none}
+  body.imprimindo-ficha .f-sec, body.imprimindo-ficha .f-kpis{break-inside:avoid}
+  body.imprimindo-ficha a{color:#111}
+}
 #tbody tr:hover td:first-child a{text-decoration-thickness:2px}
 .dica{font-size:13px; color:var(--muted); margin:0 0 10px}
 @media (max-width:700px){
@@ -610,7 +620,7 @@ function renderFicha() {
       <span class="note">Posição de ${esc(fmtPos(u.posicao))}, ano-base ${esc(u.ano_base)}.<br>${u.capag ? (boa ? "Em regra, elegível a crédito com garantia da União." : "Em regra, não elegível a crédito com garantia da União.") : "Nota não calculada pelo Tesouro."}</span></div>
     <dl><dt>Endividamento</dt><dd>${val(u.endividamento, v => pct(100 * v))} ${u.nota_endividamento ? `<span class="pt">${esc(u.nota_endividamento)}</span>` : ""}</dd>
       <dt>Poupança corrente</dt><dd>${val(u.poupanca_corrente, v => pct(100 * v))} ${u.nota_poupanca_corrente ? `<span class="pt">${esc(u.nota_poupanca_corrente)}</span>` : ""}</dd>
-      <dt>Liquidez</dt><dd>${val(u.liquidez, v => pct(100 * v))} ${u.nota_liquidez ? `<span class="pt">${esc(u.nota_liquidez)}</span>` : ""}</dd>
+      <dt>${(u.ano_capag || +String(u.posicao).slice(0, 4)) >= 2024 ? "Liquidez relativa" : "Liquidez"}</dt><dd>${val(u.liquidez, v => pct(100 * v))} ${u.nota_liquidez ? `<span class="pt">${esc(u.nota_liquidez)}</span>` : ""}</dd>
       ${u.qualidade_informacao != null ? `<dt>Qualidade da informação (ICF)</dt><dd>${esc(u.qualidade_informacao)}</dd>` : ""}</dl>
     ${u.origem_nota || u.observacao ? `<p class="note" style="margin:8px 0 0">${u.origem_nota ? `Origem da nota final: ${esc(u.origem_nota)}.` : ""}${u.observacao ? ` ${esc(u.observacao)}` : ""}</p>` : ""}
     ${cp.trajetoria.length > 1 ? `<div class="f-traj">${cp.trajetoria.map(t => `<span>${esc(fmtPos(t.posicao))} <b>${esc(t.capag || "n.d.")}</b></span>`).join("")}</div>` : ""}
@@ -660,6 +670,7 @@ function renderFicha() {
     </div>
     <div class="f-rodape"><span class="fontes">Dados do TSE, IBGE, Wikidata e Tesouro Nacional, na base de ${S.gerado ? esc(new Date(S.gerado).toLocaleDateString("pt-BR")) : "data desconhecida"}.</span>
       <div class="acoes"><button class="f-btn" data-copiar>Copiar link da ficha</button>
+        <button class="f-btn" data-pdf>Gerar PDF</button>
         <a class="primario" href="${esc(`index.html#/${r.uf}/${r.codigo_ibge}`)}">Abrir briefing completo</a></div></div>`;
 }
 
@@ -685,6 +696,17 @@ function abrirFicha(cod, gatilho) {
     else { const t = (d.municipios || {})[cod] || []; S.ficha.capag = {trajetoria: t, ultima: t.length ? t[t.length - 1] : null}; }
     renderFicha();
   });
+}
+/** PDF da ficha: o navegador imprime só o modal, em tema claro ("Salvar como PDF" no diálogo). */
+function imprimirFicha() {
+  if (!S.ficha) return;
+  const tituloAntes = document.title;
+  document.title = `Ficha ${S.ficha.r.municipio} ${S.ficha.r.uf}`;   // vira o nome sugerido do arquivo
+  document.body.classList.add("imprimindo-ficha");
+  const fim = () => { document.body.classList.remove("imprimindo-ficha"); document.title = tituloAntes; window.removeEventListener("afterprint", fim); };
+  window.addEventListener("afterprint", fim);
+  window.print();
+  setTimeout(fim, 1500);   // navegadores que não disparam afterprint
 }
 function fecharFicha() {
   if (!S.ficha) return;
@@ -714,6 +736,7 @@ function ligarFicha() {
     const t = e.target.closest("button"); if (!t) return;
     if (t.dataset.nav) navegarFicha(+t.dataset.nav);
     else if ("fechar" in t.dataset) fecharFicha();
+    else if ("pdf" in t.dataset) imprimirFicha();
     else if ("copiar" in t.dataset) {
       try { await navigator.clipboard.writeText(location.href); toast("Link da ficha copiado."); } catch { toast("Copie o endereço da barra do navegador."); }
     }
