@@ -47,7 +47,8 @@
      "cabecalho": "indicador 3"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "444b8cb5-6fea-4907-82d9-018aae1d68b5": {
   "modificado": "2024-08-19T06:34:15.127836",
@@ -101,7 +102,8 @@
      "cabecalho": "nota 3"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "f2149990-1ca4-475d-95c1-512f78079905": {
   "modificado": "2024-08-18T20:18:10.612413",
@@ -155,7 +157,8 @@
      "cabecalho": "nota 3"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "6a218451-f1b4-4fce-ac2a-00a3675bf4eb": {
   "modificado": "2024-08-13T21:53:01.310027",
@@ -209,7 +212,8 @@
      "cabecalho": "nota 3"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "31ed778a-9115-419c-b18e-c9131a978aef": {
   "modificado": "2024-08-12T18:20:09.655067",
@@ -263,7 +267,8 @@
      "cabecalho": "nota 3"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "dd42ca38-0427-45e6-8007-b39bd79ba51f": {
   "modificado": "2025-06-11T14:41:04.811415",
@@ -365,9 +370,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 84 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "aaab7fd4-6c09-4f0e-8a30-545503c56b59": {
   "modificado": "2025-06-11T14:40:48.145449",
@@ -469,9 +487,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 84 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "1f97429a-22b2-4b49-bbc1-035b76c161c4": {
   "modificado": "2025-06-11T14:41:28.546109",
@@ -573,9 +604,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 84 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "30c5fc20-634d-4558-9d45-01645b501deb": {
   "modificado": "2025-06-11T14:41:17.644682",
@@ -677,9 +721,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 84 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "986ec09d-f867-40e2-a466-0f525217df20": {
   "modificado": "2025-02-19T18:42:41.021632",
@@ -781,9 +838,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 89 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "dca obrigatoria  origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "f0d70b57-31b7-44f7-85ca-ec479131208a": {
   "modificado": "2025-06-11T14:39:48.233597",
@@ -885,9 +955,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 89 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "dca obrigatoria true origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "046f7fcf-a742-4787-9768-dbb10747d55d": {
   "modificado": "2025-11-10T21:07:58.632085",
@@ -989,9 +1072,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 89 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "dca obrigatoria true origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "f117161f-44c4-4ada-9cfe-0d5da8c5b10e": {
   "modificado": "2026-06-18T14:23:55.482869",
@@ -1093,9 +1189,22 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 89 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "dca obrigatoria true origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  },
  "bc219a6d-e917-4e10-8dda-784ad4810abe": {
   "modificado": "2026-09-15T21:37:20.911087",
@@ -1197,8 +1306,21 @@
     "nota_liquidez": {
      "indice": 9,
      "cabecalho": "67 89 nota 3"
+    },
+    "qualidade_informacao": {
+     "indice": 10,
+     "cabecalho": "icf"
+    },
+    "observacao": {
+     "indice": 11,
+     "cabecalho": "observacao"
+    },
+    "origem_nota": {
+     "indice": 12,
+     "cabecalho": "dca obrigatoria true origem da nota final"
     }
    }
-  }
+  },
+  "versao": 2
  }
 }
