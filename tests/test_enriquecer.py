@@ -74,6 +74,7 @@ class H(http.server.BaseHTTPRequestHandler):
         if p.endswith("/localidades/municipios"):
             return self.responder(localidades())
         if "/agregados/6579/periodos/-1/variaveis/9324" in p:
+            assert "localidades=N6[all]" in p or p.endswith("localidades=N6"), p   # decodificado pelo servidor
             if CTRL["sidra_falha"]:
                 return self.responder({"erro": "fora do ar"}, 503)
             series = [{"localidade": {"id": c, "nome": n}, "serie": {"2025": valor(29171, c)}} for c, (n, _) in MUN.items()]

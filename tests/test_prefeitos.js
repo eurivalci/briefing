@@ -181,105 +181,76 @@ const txt = (d, s) => d.querySelector(s).textContent.replace(/\s+/g, " ").trim()
   assert.deepStrictEqual(erros, []);
   w.close();
 
-  // ================= ficha em modal
-  const CAPAG_CE = {municipios: {"2300001": [{posicao: "2026-06-01", ano_base: 2025, capag: "C"},
-    {posicao: "2026-09-01", ano_base: 2025, capag: "B", endividamento: 0.352, nota_endividamento: "A"}]}};
-  const comCapag = (u) => u.includes("todos.json") ? TODOS : u.includes("capag/ce.json") ? CAPAG_CE : null;
-  ({w, d, erros} = montar("http://app.local/prefeitos.html", comCapag));
+  // ================= ficha em modal: briefing incorporado
+  ({w, d, erros} = montar("http://app.local/prefeitos.html", u => u.includes("todos.json") ? TODOS : null));
   await esperar(() => linhas(d).length === 50, 3000, "lista para a ficha");
-  const fundo = () => d.querySelector("#ficha-fundo");
+  const fundo = () => d.querySelector("#ficha-fundo"), quadro = () => d.querySelector("#f-quadro");
   assert(fundo().hidden, "modal começa fechado");
-  // abre pela linha (clique no nome do município)
-  const ancora = d.querySelector('#tbody tr[data-cod="2300001"] a') || linhas(d).find(l => l.dataset.cod === "2300001")?.querySelector("a");
+  assert(/abrir o briefing completo em ficha/.test(d.querySelector("#dica").textContent), "dica de uso");
+  const ancora = linhas(d).find(l => l.dataset.cod === "2300001").querySelector("a");
   ancora.focus(); ancora.click();
   assert(!fundo().hidden, "abre ao clicar na linha");
-  assert.strictEqual(d.querySelector("#f-nome").textContent, "Prefeito 1");
-  assert(/ficha=2300001/.test(w.location.hash), "link próprio da ficha");
-  assert.strictEqual(d.body.style.overflow, "hidden", "rolagem da página travada");
+  assert.strictEqual(quadro().getAttribute("src"), "index.html?embed=1#/CE/2300001", "quadro carrega o briefing incorporado");
+  assert(/Cidade 001, CE/.test(d.querySelector("#f-titulo").textContent) && /Prefeito 1/.test(d.querySelector("#f-titulo").textContent));
+  assert.strictEqual(d.querySelector("#f-abrir").getAttribute("href"), "index.html#/CE/2300001", "abrir briefing completo");
+  assert(/ficha=2300001/.test(w.location.hash) && d.body.style.overflow === "hidden");
   assert.strictEqual(d.activeElement, d.querySelector("#ficha"), "foco vai para o modal");
-  await esperar(() => /Posição de set\/2026/.test(d.querySelector("#ficha").textContent), 2000, "CAPAG na ficha");
-  const fic = d.querySelector("#ficha").textContent.replace(/\s+/g, " ");
-  assert(/jun\/2026 C/.test(fic) && /35,2%/.test(fic) && /elegível/.test(fic), "CAPAG e trajetória");
-  assert(/Mandato consistente/.test(fic) && /3\.000/.test(fic), "situação do mandato e população");
-  assert(/não informado/.test(fic), "campo ausente dito como ausente");
-  const pos1 = d.querySelector("#ficha .pos").textContent;
-  // setas navegam pela ordem filtrada
-  const idx0 = P().S.filtrados.findIndex(r => r.codigo_ibge === "2300001");
+  // clique fora do link (outra célula) também abre
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+  linhas(d).find(l => l.dataset.cod === "2300002").querySelector("td:nth-child(3)").click();
+  assert.strictEqual(quadro().getAttribute("src"), "index.html?embed=1#/CE/2300002");
+  // setas navegam pela ordem filtrada e trocam o briefing do quadro
+  const idx = P().S.filtrados.findIndex(r => r.codigo_ibge === "2300002");
   d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
-  assert.strictEqual(P().S.ficha.r.codigo_ibge, P().S.filtrados[idx0 + 1].codigo_ibge, "seta direita = próximo");
-  assert.notStrictEqual(d.querySelector("#ficha .pos").textContent, pos1);
-  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
-  assert.strictEqual(P().S.ficha.r.codigo_ibge, "2300001");
+  assert.strictEqual(quadro().getAttribute("src"), `index.html?embed=1#/CE/${P().S.filtrados[idx + 1].codigo_ibge}`, "seta direita = próximo");
+  // tecla vinda de DENTRO do briefing incorporado (postMessage do quadro) também navega e fecha
+  const msg = (tecla, source) => w.dispatchEvent(new w.MessageEvent("message", {data: {tipo: "bm-tecla", tecla}, origin: "http://app.local", source}));
+  msg("ArrowLeft", quadro().contentWindow);
+  assert.strictEqual(P().S.ficha.r.codigo_ibge, "2300002", "seta vinda do quadro");
+  msg("Escape", w);   // mensagem que NÃO veio do quadro é ignorada
+  assert(!fundo().hidden, "mensagem de outra janela ignorada");
   // navegar além da página leva a tabela junto
   P().abrirFicha(P().S.filtrados[49].codigo_ibge);
   d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
   assert(/51–100/.test(txt(d, "#pager")), "a tabela acompanha a ficha para a página 2");
-  // primeiro item: "Anterior" desabilitado
   P().abrirFicha(P().S.filtrados[0].codigo_ibge);
-  assert(d.querySelector('#ficha [data-nav="-1"]').disabled);
+  assert(d.querySelector('#ficha [data-nav="-1"]').disabled, "primeiro item: anterior desabilitado");
   // foco preso: Tab no último elemento volta ao primeiro
   const foc = P().focaveis();
-  assert.strictEqual(foc[0].tagName, "BUTTON", "primeiro focável é o da barra (ordem de documento)");
-  assert.strictEqual(foc[foc.length - 1].textContent, "Abrir briefing completo", "último é a ação principal");
+  assert(foc.length >= 6 && foc[foc.length - 1].tagName === "IFRAME", "focáveis em ordem de documento, terminando no briefing");
   foc[foc.length - 1].focus();
   d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "Tab", bubbles: true}));
   assert.strictEqual(d.activeElement, foc[0], "Tab circula dentro do modal");
-  // Esc fecha e devolve o foco a quem abriu
-  d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-  assert(fundo().hidden && !/ficha=/.test(w.location.hash) && d.body.style.overflow === "", "Esc fecha e limpa o link");
+  // PDF: imprime o briefing do quadro, com nome sugerido
+  let impresso = null;
+  const docQ = quadro().contentWindow.document;   // no navegador o quadro tem o briefing, com <title>
+  docQ.open(); docQ.write("<!DOCTYPE html><html><head><title>Briefing Municipal</title></head><body></body></html>"); docQ.close();
+  quadro().contentWindow.focus = () => {};   // jsdom não implementa; todo navegador sim
+  quadro().contentWindow.print = () => { impresso = quadro().contentWindow.document.title; };
+  d.querySelector("#ficha [data-pdf]").click();
+  const atual = P().S.ficha.r;
+  assert.strictEqual(impresso, `Briefing ${atual.municipio} ${atual.uf}`, "PDF do briefing incorporado com nome do município aberto");
+  // Esc fecha: foco volta ao município visto por último (tabela foi redesenhada)
+  msg("Escape", quadro().contentWindow);
+  assert(fundo().hidden && !/ficha=/.test(w.location.hash) && d.body.style.overflow === "", "Esc vindo do quadro fecha");
   const ultimo = d.querySelector(`#tbody tr[data-cod="${P().S.filtrados[0].codigo_ibge}"] a`);
-  assert.strictEqual(d.activeElement, ultimo, "tabela redesenhada: foco volta ao município visto por último");
+  assert.strictEqual(d.activeElement, ultimo, "foco volta ao município visto por último");
   // caso simples: abrir e fechar sem navegar devolve o foco ao próprio link
   const a2 = d.querySelector("#tbody tr[data-cod] a"); a2.focus(); a2.click();
   d.dispatchEvent(new w.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
   assert.strictEqual(d.activeElement, a2, "foco volta ao link que abriu a ficha");
   // Ctrl-clique mantém o comportamento de link (nova aba), sem modal
-  const ev = new w.MouseEvent("click", {bubbles: true, cancelable: true, ctrlKey: true});
-  a2.dispatchEvent(ev);
+  a2.dispatchEvent(new w.MouseEvent("click", {bubbles: true, cancelable: true, ctrlKey: true}));
   assert(fundo().hidden, "Ctrl-clique não abre o modal");
-  // completude da ficha: DF sem grupos que não se aplicam
-  const gDF = P().gruposFicha(P().S.todos.find(r => r.uf === "DF"), undefined);
-  assert(!gDF.some(g => /TSE|Tesouro/.test(g.nome)), "DF sem eleição e sem fiscal no selo");
-  const g1 = P().gruposFicha(P().S.todos.find(r => r.codigo_ibge === "2300001"), {ultima: {capag: "B"}});
-  assert.strictEqual(g1.find(g => g.nome === "Fiscal (Tesouro)").ok, 1);
-  assert(g1.find(g => g.nome === "Fiscal (Tesouro)").pendente === false);
   assert.deepStrictEqual(erros, [], "sem exceções na página");
   w.close();
 
-  // ================= produção atual: consolidado SEM dados do município (só as 26 colunas base)
-  const BASE26 = COLS_PUBLICADAS.slice(0, 26);
-  const TODOS_BASE = {schema: 1, gerado_em: TODOS.gerado_em, total: 5, colunas: BASE26,
-    registros: TODOS.registros.slice(0, 5).map(r => Object.fromEntries(BASE26.map(k => [k, r[k]])))};
-  const CAPAG_OBS = {municipios: {"2300001": [{posicao: "2026-09-01", ano_base: 2025, capag: "B", qualidade_informacao: "A",
-    origem_nota: "ICF", observacao: "Nota rebaixada em razão do ICF"}]}};
-  ({w, d, erros} = montar("http://app.local/prefeitos.html", u => u.includes("todos.json") ? TODOS_BASE : u.includes("capag/ce.json") ? CAPAG_OBS : null));
-  await esperar(() => linhas(d).length === 5, 3000, "lista sem dados do município");
-  assert(/Clique em um município para abrir a ficha/.test(d.querySelector("#dica").textContent), "dica de uso visível");
-  linhas(d).find(l => l.dataset.cod === "2300001").querySelector("td:nth-child(3)").click();   // clique fora do link também abre
-  assert(!d.querySelector("#ficha-fundo").hidden, "ficha abre com o consolidado de produção");
-  await esperar(() => /Origem da nota final: ICF/.test(d.querySelector("#ficha").textContent), 2000, "CAPAG completa");
-  const fb = d.querySelector("#ficha").textContent.replace(/\s+/g, " ");
-  assert(/Nota rebaixada em razão do ICF/.test(fb) && /Qualidade da informação \(ICF\)\s*A/.test(fb), "ICF e observação: " + fb.slice(fb.indexOf("Liquidez"), fb.indexOf("Liquidez") + 200));
-  assert((fb.match(/não informado/g) || []).length >= 6, "campos do IBGE ausentes ditos como ausentes");
-  const gb = P().gruposFicha(P().S.ficha.r, P().S.ficha.capag);
-  assert.strictEqual(gb.find(g => g.nome === "Município (IBGE)").ok, 0, "selo mostra o IBGE vazio");
-  // PDF da ficha: imprime só o modal e restaura a página depois
-  let imprimiu = null;
-  w.print = () => { imprimiu = {classe: d.body.classList.contains("imprimindo-ficha"), titulo: d.title}; w.dispatchEvent(new w.Event("afterprint")); };
-  d.querySelector("#ficha [data-pdf]").click();
-  assert(imprimiu && imprimiu.classe, "modo de impressão da ficha ativo durante o print");
-  assert(/^Ficha Cidade 001 CE$/.test(imprimiu.titulo), "nome sugerido do PDF: " + imprimiu.titulo);
-  assert(!d.body.classList.contains("imprimindo-ficha") && !/^Ficha/.test(d.title), "página restaurada após imprimir");
-  assert.deepStrictEqual(erros, [], "sem exceções com o formato de produção");
-  w.close();
-
-  // ================= link direto para a ficha + escape de HTML
+  // ================= link direto para a ficha + escape de HTML no título
   const TODOS_XSS = JSON.parse(JSON.stringify(TODOS));
   TODOS_XSS.registros[0].prefeito = "<img src=x onerror=alert(1)>";
   ({w, d, erros} = montar("http://app.local/prefeitos.html#ficha=2300001", u => u.includes("todos.json") ? TODOS_XSS : null));
   await esperar(() => d.querySelector("#ficha-fundo") && !d.querySelector("#ficha-fundo").hidden, 3000, "ficha pelo link");
-  assert(!d.querySelector("#ficha img[src='x']") && /&lt;img/.test(d.querySelector("#f-nome").innerHTML), "nome escapado");
-  await esperar(() => /CAPAG indisponível/.test(d.querySelector("#ficha").textContent), 2000, "erro de CAPAG explicado");
+  assert(!d.querySelector("#f-titulo img") && /&lt;img/.test(d.querySelector("#f-titulo").innerHTML), "título escapado");
   assert(!w.__alerta);
   assert.deepStrictEqual(erros, []);
   w.close();

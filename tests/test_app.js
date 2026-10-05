@@ -372,6 +372,31 @@ async function esperar(win, cond, ms = 3000, rotulo = "condição") {
   assert(!chamadas.some(u => u.includes("data/prefeitos/df.json") && false));
 
   assert.strictEqual(alertas.length, 0, "nenhum script injetado executou");
+  // ---------- modo incorporado (ficha da listagem)
+  const dom2 = new JSDOM(html, {
+    url: "http://localhost/index.html?embed=1#/CE/2304400", runScripts: "dangerously", pretendToBeVisual: true,
+    beforeParse(w2) {
+      w2.fetch = fetchMock; w2.matchMedia = () => ({matches: false});
+      w2.HTMLElement.prototype.scrollIntoView = function () {};
+    },
+  });
+  const w2 = dom2.window, d2 = w2.document;
+  await esperar(w2, () => d2.querySelector("#s-gov h4"), 3000, "briefing incorporado");
+  assert(d2.documentElement.classList.contains("embed") && w2.__BM__.EMBED, "classe do modo incorporado");
+  const css2 = [...d2.querySelectorAll("style")].map(s => s.textContent).join("");
+  assert(/html\.embed \.rail, html\.embed \.toolbar\{display:none\}/.test(css2), "barra lateral e ferramentas escondidas");
+  const recebidas = [];
+  w2.addEventListener("message", e => recebidas.push(e.data));
+  d2.dispatchEvent(new w2.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+  d2.dispatchEvent(new w2.KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
+  await sleep(30);
+  assert.strictEqual(JSON.stringify(recebidas), JSON.stringify([{tipo: "bm-tecla", tecla: "Escape"}, {tipo: "bm-tecla", tecla: "ArrowRight"}]),
+    "teclas repassadas à listagem");
+  // só fecha depois de todas as fontes responderem (fechar antes deixa respostas chegando num documento descartado)
+  await esperar(w2, () => Object.values(w2.__BM__.S.secoes).every(s => s.status !== "carregando"), 5000, "fontes do incorporado");
+  await sleep(50);
+  w2.close();
+
   console.log("TODOS OS TESTES DA INTERFACE PASSARAM (" + chamadas.length + " requisições simuladas)");
   w.close();
 })().catch(e => { console.error("FALHOU:", e.message); process.exit(1); });
