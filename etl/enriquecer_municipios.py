@@ -116,6 +116,23 @@ def ultimo_valor(serie: dict, numerico: bool):
     return None, None
 
 
+SIDRA = "https://servicodados.ibge.gov.br/api/v3/agregados"
+
+
+def sidra_todos(agregado: int, variavel: int) -> dict[str, tuple]:
+    """{codigo: (valor, ano)} do último período, para TODOS os municípios em uma chamada (N6[all])."""
+    d = get_json(f"{SIDRA}/{agregado}/periodos/-1/variaveis/{variavel}?localidades=N6[all]", timeout=180, tentativas=3)
+    out = {}
+    for var in d or []:
+        for res in var.get("resultados", []):
+            for serie in res.get("series", []):
+                cod = str((serie.get("localidade") or {}).get("id") or "")
+                v, ano = ultimo_valor(serie.get("serie") or {}, True)
+                if len(cod) == 7 and v is not None:
+                    out[cod] = (v, ano)
+    return out
+
+
 def suporta_lote(amostra: list[str]) -> bool:
     """Sonda UMA vez se a API de Pesquisas aceita vários municípios por chamada ("a|b")."""
     if len(amostra) < 2:
@@ -129,7 +146,7 @@ def suporta_lote(amostra: list[str]) -> bool:
 
 
 def resultados_em_lote(pesquisa: int, indicador: int, codigos: list[str], numerico: bool,
-                       lote: int = 100, paralelo: int = 6, com_lote: bool = True) -> tuple[dict, dict]:
+                       lote: int = 100, paralelo: int = 6, com_lote: bool = True, tentativas_unit: int = 1) -> tuple[dict, dict]:
     """{codigo: (valor, ano)}. Com lote: grupos de até 100; um lote que falhar é refeito
     município a município UMA vez (sem cascata de divisões). Sem lote: um por chamada."""
     resultado, estat = {}, {"chamadas": 0, "falhas": 0, "modo": "lote" if com_lote else "unitario"}
@@ -137,7 +154,7 @@ def resultados_em_lote(pesquisa: int, indicador: int, codigos: list[str], numeri
     def um(c: str):
         estat["chamadas"] += 1
         try:
-            d = get_json(f"{IBGE}/pesquisas/{pesquisa}/indicadores/{indicador}/resultados/{c}", timeout=60, tentativas=2)
+            d = get_json(f"{IBGE}/pesquisas/{pesquisa}/indicadores/{indicador}/resultados/{c}", timeout=25, tentativas=tentativas_unit)
             res = {str(x.get("localidade")): x.get("res") for x in (d[0].get("res") if d else []) or []}
             return [(c, ultimo_valor(res.get(c), numerico))]
         except Exception:  # noqa: BLE001
@@ -226,7 +243,7 @@ def wikidata() -> dict[str, dict]:
 # --------------------------------------------------------------------------- montagem
 
 def main(argv=None):
-    global IBGE, WDQS
+    global IBGE, WDQS, SIDRA
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default=str(RAIZ / "data" / "municipios" / "municipios.json"))
     ap.add_argument("--max-dias", type=float, default=6, help="campo atualizado há menos que isso não é buscado de novo")
@@ -236,9 +253,11 @@ def main(argv=None):
     ap.add_argument("--limite-minutos", type=float, default=15,
                     help="encerra de forma limpa (salvando) e continua na próxima execução; 0 = sem limite")
     ap.add_argument("--ibge-base", default=IBGE, help=argparse.SUPPRESS)       # testes
+    ap.add_argument("--sidra-base", default=SIDRA, help=argparse.SUPPRESS)     # testes
+    ap.add_argument("--bloco", type=int, default=400, help=argparse.SUPPRESS)   # testes
     ap.add_argument("--wikidata-url", default=WDQS, help=argparse.SUPPRESS)    # testes
     args = ap.parse_args(argv)
-    IBGE, WDQS = args.ibge_base, args.wikidata_url
+    IBGE, WDQS, SIDRA = args.ibge_base, args.wikidata_url, args.sidra_base
     t0 = time.monotonic()
     estourou = lambda: bool(args.limite_minutos) and (time.monotonic() - t0) > args.limite_minutos * 60  # noqa: E731
 
@@ -315,28 +334,76 @@ def main(argv=None):
             status["painel_meta"] = {"ok": False, "erro": str(exc)}
         tarefas += [(campo, 33, ids_texto.get(campo), False, None) for campo in texto]
     adiados = []
+    # população: tabela 6579 do SIDRA, todos os municípios numa chamada (fallback: API de Pesquisas)
+    if any(t[0] == "populacao" for t in tarefas) and not estourou():
+        try:
+            res = sidra_todos(6579, 9324)
+            if len(res) < len(codigos) * 0.9:
+                raise RuntimeError(f"SIDRA devolveu só {len(res)} municípios")
+            for c in codigos:
+                v, ano = res.get(c, (None, None))
+                mun[c]["populacao"], mun[c]["populacao_ano"] = v, ano
+            status["populacao"] = {"ok": True, "preenchidos": len(res), "unidade": "pessoas", "fonte": "SIDRA 6579",
+                                   "atualizado_em": agora_iso()}
+            tarefas = [t for t in tarefas if t[0] != "populacao"]
+            gravar()
+            print(f"[sidra] populacao: {len(res)} municípios em uma chamada", flush=True)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[sidra] falhou ({exc}); população segue pela API de Pesquisas", flush=True)
+
+    BLOCO = max(1, args.bloco)
     for campo, pesquisa, ind, numerico, unidade in tarefas:
         if estourou():
             adiados.append(campo)
             continue
-        try:
-            if not ind:
-                raise RuntimeError("indicador não localizado na pesquisa 33")
-            res, est = resultados_em_lote(pesquisa, ind, codigos, numerico, args.lote, args.paralelo, com_lote)
-            preenchidos = sum(1 for v, _ in res.values() if v not in (None, ""))
-            if preenchidos == 0:
-                raise RuntimeError("nenhum valor retornado")   # falha não apaga o que já existe
-            for c in codigos:
+        if not ind:
+            falhou(campo, RuntimeError("indicador não localizado na pesquisa 33"))
+            gravar()
+            continue
+        st = status.get(campo) or {}
+        # retomada: continua do bloco onde a execução anterior parou
+        inicio = st.get("cursor", 0) if st.get("parcial") else 0
+        preench = st.get("preenchidos_ciclo", 0) if st.get("parcial") else 0
+        chamadas = falhas_ = 0
+        concluido = True
+        for i in range(inicio, len(codigos), BLOCO):
+            if estourou():
+                concluido = False
+                status[campo] = {**st, "ok": False, "parcial": True, "cursor": i, "preenchidos_ciclo": preench,
+                                 "unidade": unidade, "retido": True}
+                gravar()
+                adiados.append(f"{campo} (parou em {i} de {len(codigos)})")
+                break
+            bloco = codigos[i:i + BLOCO]
+            res, est = resultados_em_lote(pesquisa, ind, bloco, numerico, args.lote, args.paralelo, com_lote)
+            chamadas += est["chamadas"]; falhas_ += est["falhas"]
+            for c in bloco:
                 v, ano = res.get(c, (None, None))
+                if v in (None, ""):
+                    mun[c].setdefault(campo, None)       # sem valor: mantém o que já existia, ou registra ausência
+                    if numerico:
+                        mun[c].setdefault(f"{campo}_ano", None)
+                    continue
+                preench += 1
                 mun[c][campo] = v
                 if numerico:
                     mun[c][f"{campo}_ano"] = ano
                 elif campo == "prefeito_ibge":
                     mun[c]["prefeito_ibge_ano"] = ano
-            status[campo] = {"ok": True, "preenchidos": preenchidos, "unidade": unidade, "atualizado_em": agora_iso(), **est}
-        except Exception as exc:  # noqa: BLE001
-            falhou(campo, exc)
-        gravar()   # checkpoint por indicador
+            st = {**st, "parcial": True, "cursor": i + BLOCO, "preenchidos_ciclo": preench}
+            status[campo] = {**st, "ok": False, "unidade": unidade, "retido": True}
+            gravar()                  # checkpoint por bloco
+        if not concluido:
+            continue
+        if preench == 0:
+            # falha não apaga o que já existe, e descarta o cursor: a próxima execução recomeça do início
+            anterior_ok = (status.get(campo) or {}).get("atualizado_em")
+            status[campo] = {"ok": False, "erro": "nenhum valor retornado", "retido": True, "unidade": unidade,
+                             **({"atualizado_em_anterior": anterior_ok} if anterior_ok else {})}
+        else:
+            status[campo] = {"ok": True, "preenchidos": preench, "unidade": unidade, "atualizado_em": agora_iso(),
+                             "chamadas": chamadas, "falhas": falhas_, "modo": "lote" if com_lote else "unitario"}
+        gravar()
         print(f"[ibge] {campo}: {status[campo]}", flush=True)
 
     if adiados:

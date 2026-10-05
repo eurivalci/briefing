@@ -39,6 +39,8 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 CKAN = "https://www.tesourotransparente.gov.br/ckan/api/3/action/package_show?id=capag-municipios"
 UA = {"User-Agent": "BriefingMunicipal-ETL/1.0 (EDP Sistemas; dados publicos)", "Accept-Encoding": "gzip"}
+# Versão do leitor: subir quando ele passar a extrair algo novo, para reprocessar as posições em cache
+PARSER_VERSAO = 2
 NOTAS_FINAIS = {"A+", "A", "B+", "B", "C", "D"}
 NAO_CALCULADA = {"N.D.", "ND", "N/D", "N.E.", "NE", "NAO CALCULADA", "NÃO CALCULADA", "-", "N.A.", "NA", "*"}
 NOTAS_IND = {"A", "B", "C"}
@@ -347,7 +349,8 @@ def main(argv=None):
     for p in posicoes:
         chave = p["id"]
         arq_pos = dest / "posicoes" / f"{p['data'] or p['ano']}.json"
-        if cache.get(chave, {}).get("modificado") == p["modificado"] and arq_pos.exists():
+        if (cache.get(chave, {}).get("modificado") == p["modificado"] and arq_pos.exists()
+                and cache.get(chave, {}).get("versao") == PARSER_VERSAO):
             relatorio["reaproveitadas"].append(p["nome"])
             continue
         if p.get("tamanho") == 0:
@@ -366,7 +369,7 @@ def main(argv=None):
             tmp_pos = arq_pos.with_suffix(".json.tmp")
             tmp_pos.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
             tmp_pos.replace(arq_pos)
-            cache[chave] = {"modificado": p["modificado"], "arquivo": arq_pos.name, "layout": diag}
+            cache[chave] = {"modificado": p["modificado"], "arquivo": arq_pos.name, "layout": diag, "versao": PARSER_VERSAO}
             relatorio["processadas"].append({"posicao": p["nome"], **{k: diag[k] for k in ("aba", "linhas")},
                                              "colunas": {k: v["cabecalho"] for k, v in diag["colunas"].items()}})
             print(f"[capag] {p['nome']}: {diag['linhas']} municípios, colunas -> "
@@ -414,6 +417,22 @@ def main(argv=None):
                                   ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         tmp.replace(arq)
     relatorio["arquivos_por_uf"] = sorted(por_uf)
+    # distribuição das notas por UF e no Brasil nas posições mais recentes (para "onde o município está")
+    distrib = []
+    for d in docs[-4:]:
+        brasil, ufs = defaultdict(int), defaultdict(lambda: defaultdict(int))
+        for cod, reg in d["municipios"].items():
+            uf = UF_POR_PREFIXO.get(cod[:2])
+            if not uf:
+                continue
+            nota = reg.get("capag") or "n.d."
+            brasil[nota] += 1
+            ufs[uf][nota] += 1
+        distrib.append({"posicao": d["data"] or str(d["ano_capag"]), "ano_base": d["ano_base"],
+                        "brasil": dict(brasil), "ufs": {u: dict(v) for u, v in sorted(ufs.items())}})
+    (dest / "_distribuicao.json").write_text(json.dumps({"gerado_em": agora, "licenca": cabecalho["licenca"],
+                                                         "posicoes": distrib}, ensure_ascii=False, separators=(",", ":")),
+                                             encoding="utf-8")
     (dest / "_auditoria.json").write_text(json.dumps({"gerado_em": agora, **relatorio}, ensure_ascii=False, indent=1),
                                           encoding="utf-8")
     if not por_uf:
